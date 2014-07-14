@@ -1,4 +1,4 @@
-SEPhysicsAsteroidsPlugin
-========================
+WarpDrivePlugin
+===============
 
-Replaces Meteors with physics objects for more realistic damage. 
+This is a plugin for SEModAPI-based tools such as SEServerExtender
