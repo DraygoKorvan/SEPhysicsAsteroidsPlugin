@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Timers;
 using System.Reflection;
+using System.Threading;
 
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Common.ObjectBuilders.VRageData;
@@ -23,16 +24,28 @@ using SEModAPIInternal.Support;
 using SEModAPI.API;
 
 using VRageMath;
+using VRage.Common.Utils;
+
 
 namespace PhysicsAsteroidsPlugin
 {
-	public class Core : PluginBase, ICubeBlockEventHandler
+	public class Core : PluginBase
 	{
 		#region "Attributes"
+
 		private double m_ore_amt = 60000;
 		private double m_ore_fctr = 1;
+		private float m_maxVelocityFctr = 1F;
+		private float m_velocityFctr = 3F;
+		private bool m_running = false;
+		private bool m_meteoron = true;
+
+		private static Type m_InventoryItemType = new MyObjectBuilderType(typeof(MyObjectBuilder_InventoryItem));
+		private static Type m_OreType = new MyObjectBuilderType(typeof(MyObjectBuilder_Ore));
+		private static Type m_FloatingObjectType = new MyObjectBuilderType(typeof(MyObjectBuilder_FloatingObject));
 
 		private Random m_gen;
+
 		#endregion
 
 		#region "Constructors and Initializers"
@@ -44,7 +57,11 @@ namespace PhysicsAsteroidsPlugin
 
 		public override void Init()
 		{
+			m_running = false;
 			m_gen = new Random(3425325);//temp hash
+			m_maxVelocityFctr = 1F;
+			m_velocityFctr = 3F;
+
 			Console.WriteLine("PhysicsAsteroidPlugin '" + Id.ToString() + "' initialized!");
 		}
 
@@ -52,16 +69,77 @@ namespace PhysicsAsteroidsPlugin
 
 		#region "Properties"
 
+		[Category("Physics Meteor Plugin")]
+		[Browsable(true)]
+		[ReadOnly(false)]
+		public double ore_fctr
+		{
+			get { return m_ore_fctr; }
+			set { m_ore_fctr = value; }
+		}
 
+		[Category("Physics Meteor Plugin")]
+		[Browsable(true)]
+		[ReadOnly(false)]
+		public double ore_amt
+		{
+			get { return m_ore_amt; }
+			set { if (value > 0) m_ore_amt = value; }
+		}
+
+		[Category("Physics Meteor Plugin")]
+		[Browsable(true)]
+		[ReadOnly(false)]
+		public float MaxVelocityFctr
+		{
+			get { return m_maxVelocityFctr; }
+			set { m_maxVelocityFctr = value; }
+		}
+
+		[Category("Physics Meteor Plugin")]
+		[Browsable(true)]
+		[ReadOnly(false)]
+		public float velocityFctr
+		{
+			get { return m_velocityFctr; }
+			set { m_velocityFctr = value; }
+		}
+
+		[Category("Physics Meteor Plugin")]
+		[Browsable(true)]
+		[ReadOnly(false)]
+		public bool meteoron
+		{
+			get { return m_meteoron; }
+			set { if (value) m_meteoron = true; else m_meteoron = false; }
+		}
 		#endregion
 
 		#region "Methods"
+
+		public static void velocityloop(FloatingObject obj)
+		{
+			Thread.Sleep(10);
+			for (int count = 20; count > 0; count--)
+			{
+				if (obj.Mass > 0)
+				{
+					obj.LinearVelocity = obj.LinearVelocity;
+					break;
+				}
+				Thread.Sleep(10);
+			}
+			return;
+		}
+
 
 		#region "EventHandlers"
 
 		public override void Update()
 		{
-			//Console.WriteLine("Update...");
+			//prevent multiple update threads to run at once.
+			if (m_running) return;
+			m_running = true;
 			MyPositionAndOrientation position;
 			Vector3Wrapper pos;
 			Vector3Wrapper velocity;
@@ -71,75 +149,73 @@ namespace PhysicsAsteroidsPlugin
 			MyObjectBuilder_InventoryItem tempitem = new MyObjectBuilder_InventoryItem();
 			tempore.SetDefaultProperties();
 			FloatingObject physicsmeteor;
-
+			
 			List<ulong> connectedPlayers = ServerNetworkManager.Instance.GetConnectedPlayers();
 			List<Meteor> entityList = SectorObjectManager.Instance.GetTypedInternalData<Meteor>();
 
 			foreach (var sectorObject in entityList)
 			{
-					if (!sectorObject.IsDisposed)
+				if (!sectorObject.IsDisposed)
+				{
+					position = sectorObject.PositionAndOrientation;
+					pos = sectorObject.Position;
+					velocity = sectorObject.LinearVelocity;
+					velocity = Vector3.Multiply(velocity, velocityFctr);
+					sectorObject.Dispose();
+					if(!meteoron)
+						return;
+					if (connectedPlayers.Count > 0 )
 					{
-						Console.WriteLine("Meteor Detected: " + sectorObject.Name + " EntityID: " + sectorObject.EntityId.ToString());
-						//deleting meteor
-						position = sectorObject.PositionAndOrientation;
-						pos = sectorObject.Position;
-						velocity = sectorObject.LinearVelocity;
-						sectorObject.Dispose();
-						Console.WriteLine("Meteor Deleted: " + sectorObject.Name + " EntityID: " + sectorObject.EntityId.ToString());
-						//if there are not enough players connected, abort the shower
-						if (connectedPlayers.Count > 0)
+						try
 						{
-							try
-							{
-								m_ore_fctr = m_gen.NextDouble();
+							m_ore_fctr = m_gen.NextDouble();
 
-								tempobject = new MyObjectBuilder_FloatingObject();
-								tempobject.SetDefaultProperties();
-								tempobject.PositionAndOrientation = position;
-								tempobject.Name = "Stone";
-								tempitem.SetDefaultProperties();
-								tempitem.AmountDecimal = Math.Round((decimal)(m_ore_amt * m_ore_fctr));
-								tempitem.ItemId = 0;
-								tempitem.PhysicalContent = new MyObjectBuilder_PhysicalObject();
-								tempitem.PhysicalContent.ChangeType(tempore.TypeId, "Stone");
-								tempobject.Item = tempitem;
-								
-								
-								try
-								{
-									//spawn in new floating object
-									physicsmeteor = new FloatingObject(tempobject);
-									physicsmeteor.EntityId = physicsmeteor.GenerateEntityId();
-									physicsmeteor.LinearVelocity = velocity;
-									physicsmeteor.MaxLinearVelocity = 104.7F;
-									SectorObjectManager.Instance.AddEntity(physicsmeteor);
-									Console.WriteLine("Floating Object Spawned: " + physicsmeteor.EntityId.ToString());
-								}
-								catch (Exception ex)
-								{
-									Console.WriteLine("Exception: floatingobject " + ex.ToString());
-									throw;
-								}
-							}
-							catch (Exception ex)
-							{
-								Console.WriteLine("Exception: myobjectbuilder_floatingobject " + ex.ToString());
-							}
-							
+							tempitem = (MyObjectBuilder_InventoryItem)MyObjectBuilder_InventoryItem.CreateNewObject(m_InventoryItemType);
+							//Setup the properties of the inventory item
+							tempitem.AmountDecimal = Math.Round((decimal)(m_ore_amt * m_ore_fctr));
+							tempitem.ItemId = 0;
+
+							tempitem.PhysicalContent = (MyObjectBuilder_PhysicalObject)MyObjectBuilder_PhysicalObject.CreateNewObject(m_OreType);
+							tempitem.PhysicalContent.SubtypeName = "Stone";
+
+							tempobject = (MyObjectBuilder_FloatingObject)MyObjectBuilder_FloatingObject.CreateNewObject(m_FloatingObjectType);
+							tempobject.Item = tempitem;
+							//tempobject.Name = "Meteor Stone";
+
+							physicsmeteor = new FloatingObject(tempobject);
+							physicsmeteor.EntityId = physicsmeteor.GenerateEntityId();
+							physicsmeteor.PositionAndOrientation = position;
+							physicsmeteor.Position = pos;
+							physicsmeteor.LinearVelocity = velocity;
+							physicsmeteor.MaxLinearVelocity = 104.7F * MaxVelocityFctr;
+
+							SectorObjectManager.Instance.AddEntity(physicsmeteor);
+							//workaround for the velocity problem.
+							Thread T = new Thread(() => velocityloop(physicsmeteor));
+							T.Start();								
+							//LogManager.APILog.WriteLineAndConsole("Floating Object Spawned: " + physicsmeteor.EntityId.ToString());
 						}
+						catch (Exception ex)
+						{
+							LogManager.APILog.WriteLineAndConsole(ex.ToString());
+						}
+							
 					}
+				}
 			}
+			m_running = false;
 		}
 
-		public void OnCubeBlockCreated(CubeBlockEntity cubeBlock)
+		public override void Shutdown()
 		{
-
+			m_running = true;
+			Thread.Sleep(300);//wait for functions to complete. 
+			m_running = false;
+			m_maxVelocityFctr = 1F;
+			m_velocityFctr = 3F;
+			return;
 		}
 
-		public void OnCubeBlockDeleted(CubeBlockEntity cubeBlock)
-		{
-
-		}
 
 		#endregion
 
