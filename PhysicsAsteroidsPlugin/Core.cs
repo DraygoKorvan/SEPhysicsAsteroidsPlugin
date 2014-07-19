@@ -167,7 +167,7 @@ namespace PhysicsAsteroidsPlugin
 			}
 
 		}
-		public void velocityloop(FloatingObject obj)
+		public void velocityloop(FloatingObject obj, Vector3Wrapper vel)
 		{
 			Thread.Sleep(10);
 			for (int count = 20; count > 0; count--)
@@ -175,7 +175,7 @@ namespace PhysicsAsteroidsPlugin
 				if (obj.Mass > 0)
 				{
 					obj.MaxLinearVelocity = m_maxVelocityFctr;
-					obj.LinearVelocity = obj.LinearVelocity;
+					obj.LinearVelocity = vel;
 					break;
 				}
 				Thread.Sleep(10);
@@ -192,7 +192,9 @@ namespace PhysicsAsteroidsPlugin
 			//prevent multiple update threads to run at once.
 			if (m_running) return;
 			m_running = true;
-			MyPositionAndOrientation position;
+			//MyPositionAndOrientation position;
+			Vector3Wrapper up;
+			Vector3Wrapper forward;
 			Vector3Wrapper pos;
 			Vector3Wrapper velocity;
 			
@@ -209,7 +211,9 @@ namespace PhysicsAsteroidsPlugin
 			{
 				if (!sectorObject.IsDisposed)
 				{
-					position = sectorObject.PositionAndOrientation;
+					//position = sectorObject.PositionAndOrientation;
+					up = sectorObject.Up;
+					forward = sectorObject.Forward;
 					pos = sectorObject.Position;
 					velocity = sectorObject.LinearVelocity;
 					velocity = Vector3.Multiply(velocity, velocityFctr);
@@ -235,14 +239,16 @@ namespace PhysicsAsteroidsPlugin
 
 							physicsmeteor = new FloatingObject(tempobject);
 							physicsmeteor.EntityId = physicsmeteor.GenerateEntityId();
-							physicsmeteor.PositionAndOrientation = position;
+							//physicsmeteor.PositionAndOrientation = position;
+							physicsmeteor.Up = up;
+							physicsmeteor.Forward = forward;
 							physicsmeteor.Position = pos;
 							physicsmeteor.LinearVelocity = velocity;
 							physicsmeteor.MaxLinearVelocity = 104.7F * m_maxVelocityFctr;
 
 							SectorObjectManager.Instance.AddEntity(physicsmeteor);
 							//workaround for the velocity problem.
-							Thread physicsthread = new Thread(() => velocityloop(physicsmeteor));
+							Thread physicsthread = new Thread(() => velocityloop(physicsmeteor, velocity));
 							physicsthread.Start();								
 							
 						}
