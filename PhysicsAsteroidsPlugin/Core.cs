@@ -6,6 +6,9 @@ using System.Text;
 using System.Timers;
 using System.Reflection;
 using System.Threading;
+using System.IO;
+using System.Xml;
+using System.Xml.Serialization;
 
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Common.ObjectBuilders.VRageData;
@@ -27,32 +30,44 @@ using VRageMath;
 using VRage.Common.Utils;
 
 
+
 namespace PhysicsAsteroidsPlugin
 {
-	public class Core : PluginBase
+	[Serializable()]
+	public class PhysicsAsteroidCore : PluginBase
 	{
+		
 		#region "Attributes"
-
+		[field: NonSerialized()]
 		private double m_ore_amt = 60000;
+		[field: NonSerialized()]
 		private double m_ore_fctr = 1;
+		[field: NonSerialized()]
 		private float m_maxVelocityFctr = 1F;
+		[field: NonSerialized()]
 		private float m_velocityFctr = 3F;
+		[field: NonSerialized()]
 		private bool m_running = false;
+		[field: NonSerialized()]
 		private bool m_meteoron = true;
 
+		[field: NonSerialized()]
 		private static Type m_InventoryItemType = new MyObjectBuilderType(typeof(MyObjectBuilder_InventoryItem));
+		[field: NonSerialized()]
 		private static Type m_OreType = new MyObjectBuilderType(typeof(MyObjectBuilder_Ore));
+		[field: NonSerialized()]
 		private static Type m_FloatingObjectType = new MyObjectBuilderType(typeof(MyObjectBuilder_FloatingObject));
-
+		
+		[field: NonSerialized()]
 		private Random m_gen;
 
 		#endregion
 
 		#region "Constructors and Initializers"
 
-		public Core()
+		public void Core()
 		{
-			Console.WriteLine("PhysicsAsteroidPlugin '" + Id.ToString() + "' constructed!");
+			Console.WriteLine("PhysicsAsteroidPlugin '" + Id.ToString() + "' constructed!");	
 		}
 
 		public override void Init()
@@ -61,8 +76,9 @@ namespace PhysicsAsteroidsPlugin
 			m_gen = new Random(3425325);//temp hash
 			m_maxVelocityFctr = 1F;
 			m_velocityFctr = 3F;
-
+			m_ore_amt = 60000;
 			Console.WriteLine("PhysicsAsteroidPlugin '" + Id.ToString() + "' initialized!");
+			loadXML();
 		}
 
 		#endregion
@@ -70,15 +86,7 @@ namespace PhysicsAsteroidsPlugin
 		#region "Properties"
 
 		[Category("Physics Meteor Plugin")]
-		[Browsable(true)]
-		[ReadOnly(false)]
-		public double ore_fctr
-		{
-			get { return m_ore_fctr; }
-			set { m_ore_fctr = value; }
-		}
-
-		[Category("Physics Meteor Plugin")]
+		[Description("Maximum meteor size.")]
 		[Browsable(true)]
 		[ReadOnly(false)]
 		public double ore_amt
@@ -86,19 +94,29 @@ namespace PhysicsAsteroidsPlugin
 			get { return m_ore_amt; }
 			set { if (value > 0) m_ore_amt = value; }
 		}
-
+		
+		[Browsable(true)]
+		[ReadOnly(true)]
+		public string Location
+		{
+			get { return System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\"; }
+		
+		}
 		[Category("Physics Meteor Plugin")]
+		[Description("Set Maximum velocity (does not work yet)")]
 		[Browsable(true)]
 		[ReadOnly(false)]
+		
 		public float MaxVelocityFctr
 		{
 			get { return m_maxVelocityFctr; }
 			set { m_maxVelocityFctr = value; }
 		}
-
 		[Category("Physics Meteor Plugin")]
+		[Description("Multiply original velocity by this factor.")]
 		[Browsable(true)]
 		[ReadOnly(false)]
+		
 		public float velocityFctr
 		{
 			get { return m_velocityFctr; }
@@ -106,6 +124,7 @@ namespace PhysicsAsteroidsPlugin
 		}
 
 		[Category("Physics Meteor Plugin")]
+		[Description("Enables or Disables meteor swarms")]
 		[Browsable(true)]
 		[ReadOnly(false)]
 		public bool meteoron
@@ -117,18 +136,51 @@ namespace PhysicsAsteroidsPlugin
 
 		#region "Methods"
 
-		public static void velocityloop(FloatingObject obj)
+		public void saveXML()
+		{
+
+			XmlSerializer x = new XmlSerializer(typeof(PhysicsAsteroidCore));
+			TextWriter writer = new StreamWriter(Location + "Configuration.xml");
+			x.Serialize(writer, this);
+			writer.Close();
+
+		}
+		public void loadXML()
+		{
+			try
+			{
+				if (File.Exists(Location + "Configuration.xml"))
+				{
+					XmlSerializer x = new XmlSerializer(typeof(PhysicsAsteroidCore));
+					TextReader reader = new StreamReader(Location + "Configuration.xml");
+					PhysicsAsteroidCore obj = (PhysicsAsteroidCore)x.Deserialize(reader);
+					meteoron = obj.meteoron;
+					velocityFctr = obj.velocityFctr;
+					MaxVelocityFctr = obj.MaxVelocityFctr;
+					ore_amt = obj.ore_amt;
+					reader.Close();
+				}
+			}
+			catch (Exception ex)
+			{
+				LogManager.APILog.WriteLineAndConsole("Could not load configuration:" + ex.ToString());
+			}
+
+		}
+		public void velocityloop(FloatingObject obj)
 		{
 			Thread.Sleep(10);
 			for (int count = 20; count > 0; count--)
 			{
 				if (obj.Mass > 0)
 				{
+					obj.MaxLinearVelocity = m_maxVelocityFctr;
 					obj.LinearVelocity = obj.LinearVelocity;
 					break;
 				}
 				Thread.Sleep(10);
 			}
+			
 			return;
 		}
 
@@ -163,7 +215,7 @@ namespace PhysicsAsteroidsPlugin
 					velocity = Vector3.Multiply(velocity, velocityFctr);
 					sectorObject.Dispose();
 					if(!meteoron)
-						return;
+						continue;
 					if (connectedPlayers.Count > 0 )
 					{
 						try
@@ -180,20 +232,19 @@ namespace PhysicsAsteroidsPlugin
 
 							tempobject = (MyObjectBuilder_FloatingObject)MyObjectBuilder_FloatingObject.CreateNewObject(m_FloatingObjectType);
 							tempobject.Item = tempitem;
-							//tempobject.Name = "Meteor Stone";
 
 							physicsmeteor = new FloatingObject(tempobject);
 							physicsmeteor.EntityId = physicsmeteor.GenerateEntityId();
 							physicsmeteor.PositionAndOrientation = position;
 							physicsmeteor.Position = pos;
 							physicsmeteor.LinearVelocity = velocity;
-							physicsmeteor.MaxLinearVelocity = 104.7F * MaxVelocityFctr;
+							physicsmeteor.MaxLinearVelocity = 104.7F * m_maxVelocityFctr;
 
 							SectorObjectManager.Instance.AddEntity(physicsmeteor);
 							//workaround for the velocity problem.
-							Thread T = new Thread(() => velocityloop(physicsmeteor));
-							T.Start();								
-							//LogManager.APILog.WriteLineAndConsole("Floating Object Spawned: " + physicsmeteor.EntityId.ToString());
+							Thread physicsthread = new Thread(() => velocityloop(physicsmeteor));
+							physicsthread.Start();								
+							
 						}
 						catch (Exception ex)
 						{
@@ -208,6 +259,7 @@ namespace PhysicsAsteroidsPlugin
 
 		public override void Shutdown()
 		{
+			saveXML();
 			m_running = true;
 			Thread.Sleep(300);//wait for functions to complete. 
 			m_running = false;
