@@ -107,7 +107,7 @@ namespace PhysicsAsteroidsPlugin
 		[Browsable(true)]
 		[ReadOnly(false)]
 		
-		public float MaxVelocityFctr
+		public float maxVelocityFctr
 		{
 			get { return m_maxVelocityFctr; }
 			set { m_maxVelocityFctr = value; }
@@ -156,7 +156,7 @@ namespace PhysicsAsteroidsPlugin
 					PhysicsAsteroidCore obj = (PhysicsAsteroidCore)x.Deserialize(reader);
 					meteoron = obj.meteoron;
 					velocityFctr = obj.velocityFctr;
-					MaxVelocityFctr = obj.MaxVelocityFctr;
+					maxVelocityFctr = obj.maxVelocityFctr;
 					ore_amt = obj.ore_amt;
 					reader.Close();
 				}
@@ -176,6 +176,10 @@ namespace PhysicsAsteroidsPlugin
 				{
 					obj.MaxLinearVelocity = m_maxVelocityFctr;
 					obj.LinearVelocity = vel;
+					if (SandboxGameAssemblyWrapper.IsDebugging)
+					{
+						LogManager.APILog.WriteLineAndConsole("Meteor entityID: " + obj.EntityId.ToString() + " Velocity: " + vel.ToString());
+					}
 					break;
 				}
 				Thread.Sleep(10);
@@ -192,7 +196,6 @@ namespace PhysicsAsteroidsPlugin
 			//prevent multiple update threads to run at once.
 			if (m_running) return;
 			m_running = true;
-			//MyPositionAndOrientation position;
 			Vector3Wrapper up;
 			Vector3Wrapper forward;
 			Vector3Wrapper pos;
@@ -211,12 +214,19 @@ namespace PhysicsAsteroidsPlugin
 			{
 				if (!sectorObject.IsDisposed)
 				{
-					//position = sectorObject.PositionAndOrientation;
 					up = sectorObject.Up;
 					forward = sectorObject.Forward;
 					pos = sectorObject.Position;
 					velocity = sectorObject.LinearVelocity;
-					velocity = Vector3.Multiply(velocity, velocityFctr);
+					if (SandboxGameAssemblyWrapper.IsDebugging)
+					{
+						LogManager.APILog.WriteLineAndConsole("Orig Velocity: " + velocity.ToString());
+					}
+					velocity = Vector3.Multiply(velocity, m_velocityFctr);
+					if (SandboxGameAssemblyWrapper.IsDebugging)
+					{
+						LogManager.APILog.WriteLineAndConsole("Mult Velocity: " + velocity.ToString());
+					}
 					sectorObject.Dispose();
 					if(!meteoron)
 						continue;
@@ -239,13 +249,15 @@ namespace PhysicsAsteroidsPlugin
 
 							physicsmeteor = new FloatingObject(tempobject);
 							physicsmeteor.EntityId = physicsmeteor.GenerateEntityId();
-							//physicsmeteor.PositionAndOrientation = position;
 							physicsmeteor.Up = up;
 							physicsmeteor.Forward = forward;
 							physicsmeteor.Position = pos;
 							physicsmeteor.LinearVelocity = velocity;
 							physicsmeteor.MaxLinearVelocity = 104.7F * m_maxVelocityFctr;
-
+							if (SandboxGameAssemblyWrapper.IsDebugging)
+							{
+								LogManager.APILog.WriteLineAndConsole("Meteor entityID: " + physicsmeteor.EntityId.ToString() + " Velocity: " + velocity.ToString());
+							}
 							SectorObjectManager.Instance.AddEntity(physicsmeteor);
 							//workaround for the velocity problem.
 							Thread physicsthread = new Thread(() => velocityloop(physicsmeteor, velocity));
