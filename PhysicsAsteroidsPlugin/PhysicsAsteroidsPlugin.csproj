@@ -39,7 +39,9 @@
   </PropertyGroup>
   <ItemGroup />
   <ItemGroup>
+    <Compile Include="Exceptions\PMNoPlayersException.cs" />
     <Compile Include="Core.cs" />
+    <Compile Include="Exceptions\PMNoTargetException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

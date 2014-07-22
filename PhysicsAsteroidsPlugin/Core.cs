@@ -34,7 +34,7 @@ using VRage.Common.Utils;
 namespace PhysicsAsteroidsPlugin
 {
 	[Serializable()]
-	public class PhysicsAsteroidCore : PluginBase
+	public class PhysicsAsteroidCore : PluginBase, IChatEventHandler
 	{
 		
 		#region "Attributes"
@@ -187,12 +187,177 @@ namespace PhysicsAsteroidsPlugin
 			
 			return;
 		}
+		private void CreateMeteorStorm()
+		{
+			try
+			{
+				int minmeteor = 1;
+				int maxmeteor = 50;
+				int ranmeteor = m_gen.Next(maxmeteor - minmeteor) + minmeteor;
+				
+				CubeGridEntity target = FindTarget();
+				Vector3Wrapper pos = target.Position;
+				Vector3Wrapper velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
+				Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), 3000));
+				//spawn meteors in a random position around stormpos with the velocity of velnorm
+				for (int i = 0; i < ranmeteor; i++)
+				{
+					Thread.Sleep(1000);
+					spawnMeteor(
+						Vector3.Add(
+							stormpos, 
+							Vector3.Multiply(
+								Vector3.Normalize(
+									new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)
+									),
+								20)
+							),
+						Vector3.Add(
+							Vector3.Multiply(
+								velnorm, 
+								(float)(50d + m_gen.NextDouble() * 55d)
+								),
+							Vector3.Multiply(Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), 0.2F)
+							)
+						);
+
+				}
+			}
+			catch (PMNoPlayersException ex)
+			{
+				//do nothing
+				Console.WriteLine("Meteor Shower Aborted: " + ex.ToString());
+			}
+			catch (PMNoTargetException ex)
+			{
+				Console.WriteLine("Meteor Shower Aborted: " + ex.ToString());
+			}
+			catch (Exception ex)
+			{
+				LogManager.APILog.WriteLineAndConsole(ex.ToString());
+			}
+		}
+		private CubeGridEntity FindTarget()
+		{
+			//pull online players
+			List<CubeGridEntity> targets = new List<CubeGridEntity>();
+			List<ulong> playerList = ServerNetworkManager.Instance.GetConnectedPlayers();
+			//select a target
+			if (playerList.Count() <= 0)
+				throw new PMNoPlayersException("No players found");
 
 
+			int targetno = (int)Math.Floor(m_gen.NextDouble() * playerList.Count());
+			if (targetno > playerList.Count()) throw new PMNoTargetException("Invalid Target");
+			ulong utarget = playerList[targetno];
+
+			//convert utarget to target, target is just an id. not supported in API yet
+
+
+			long target = 0;//set to targetid obtained from utarget
+			if (target > 0)
+			{
+				List<CubeGridEntity> list = SectorObjectManager.Instance.GetTypedInternalData<CubeGridEntity>();
+				foreach (var item in list)
+				{
+					try
+					{
+
+						foreach (var cubeBlock in item.CubeBlocks)
+						{
+							if(cubeBlock.Owner == target) 
+							{
+								targets.Add(item);
+								break;
+							}
+						}
+						
+					}
+					catch (Exception ex)
+					{
+						LogManager.GameLog.WriteLine(ex);
+					}
+				}
+				targetno = (int)Math.Floor( (double)targets.Count() * m_gen.NextDouble() );
+				if (targetno > targets.Count()) throw new PMNoTargetException("Invalid Target");
+				return targets[targetno];
+			}
+			else
+				throw new PMNoTargetException("Invalid Target");
+		}
+		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel)
+		{
+			MyObjectBuilder_FloatingObject tempobject;
+			MyObjectBuilder_Ore tempore = new MyObjectBuilder_Ore();
+			MyObjectBuilder_InventoryItem tempitem = new MyObjectBuilder_InventoryItem();
+			tempore.SetDefaultProperties();
+			FloatingObject physicsmeteor;
+			m_ore_fctr = m_gen.NextDouble();
+
+			tempitem = (MyObjectBuilder_InventoryItem)MyObjectBuilder_InventoryItem.CreateNewObject(m_InventoryItemType);
+			tempitem.PhysicalContent = (MyObjectBuilder_PhysicalObject)MyObjectBuilder_PhysicalObject.CreateNewObject(m_OreType);
+			tempitem.PhysicalContent.SubtypeName = getRandomOre();
+			tempitem.AmountDecimal = Math.Round((decimal)(m_ore_amt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
+			tempitem.ItemId = 0;
+
+			tempobject = (MyObjectBuilder_FloatingObject)MyObjectBuilder_FloatingObject.CreateNewObject(m_FloatingObjectType);
+			tempobject.Item = tempitem;
+
+			physicsmeteor = new FloatingObject(tempobject);
+			physicsmeteor.EntityId = FloatingObject.GenerateEntityId();
+			//physicsmeteor.Up = up;
+			//physicsmeteor.Forward = forward;
+			physicsmeteor.Position = spawnpos;
+			physicsmeteor.LinearVelocity = vel;
+			physicsmeteor.MaxLinearVelocity = 104.7F * m_maxVelocityFctr;
+			if (SandboxGameAssemblyWrapper.IsDebugging)
+			{
+				LogManager.APILog.WriteLineAndConsole("Meteor entityID: " + physicsmeteor.EntityId.ToString() + " Velocity: " + vel.ToString());
+			}
+			SectorObjectManager.Instance.AddEntity(physicsmeteor);
+			//workaround for the velocity problem.
+			Thread physicsthread = new Thread(() => velocityloop(physicsmeteor, vel));
+			physicsthread.Start();	
+
+		}
+		private string getRandomOre()
+		{
+			//next is twice as rare as the previous
+			if (m_gen.NextDouble() > 0.5d)
+				return "Stone";
+			if (m_gen.NextDouble() > 0.5d)
+				return "Iron";
+			if (m_gen.NextDouble() > 0.5d)
+				return "Silver";
+			if (m_gen.NextDouble() > 0.5d)
+				return "Silicon";
+			if (m_gen.NextDouble() > 0.5d)
+				return "Gold";
+			if (m_gen.NextDouble() > 0.5d)
+				return "Uranium";
+			return "Platinum";
+		}
+
+		private double getOreFctr(string ore)
+		{
+			switch (ore)
+			{
+				case "Stone": return 1d;
+				case "Iron": return 1d;
+				case "Silver": return 0.9d;
+				case "Silicon": return 1d;
+				case "Gold": return 0.5d;
+				case "Uranium": return 0.2d;
+				case "Platinum": return 0.1d;
+			}
+			return 1;
+		}
+		
 		#region "EventHandlers"
 
 		public override void Update()
 		{
+			
 			//prevent multiple update threads to run at once.
 			if (m_running) return;
 			m_running = true;
@@ -238,17 +403,18 @@ namespace PhysicsAsteroidsPlugin
 
 							tempitem = (MyObjectBuilder_InventoryItem)MyObjectBuilder_InventoryItem.CreateNewObject(m_InventoryItemType);
 							//Setup the properties of the inventory item
-							tempitem.AmountDecimal = Math.Round((decimal)(m_ore_amt * m_ore_fctr));
-							tempitem.ItemId = 0;
+
 
 							tempitem.PhysicalContent = (MyObjectBuilder_PhysicalObject)MyObjectBuilder_PhysicalObject.CreateNewObject(m_OreType);
-							tempitem.PhysicalContent.SubtypeName = "Stone";
+							tempitem.PhysicalContent.SubtypeName = getRandomOre();
+							tempitem.AmountDecimal = Math.Round( (decimal)(m_ore_amt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr) );
+							tempitem.ItemId = 0;
 
 							tempobject = (MyObjectBuilder_FloatingObject)MyObjectBuilder_FloatingObject.CreateNewObject(m_FloatingObjectType);
 							tempobject.Item = tempitem;
 
 							physicsmeteor = new FloatingObject(tempobject);
-							physicsmeteor.EntityId = physicsmeteor.GenerateEntityId();
+							physicsmeteor.EntityId = FloatingObject.GenerateEntityId();
 							physicsmeteor.Up = up;
 							physicsmeteor.Forward = forward;
 							physicsmeteor.Position = pos;
@@ -286,7 +452,45 @@ namespace PhysicsAsteroidsPlugin
 			return;
 		}
 
+		public void OnChatReceived(SEModAPIExtensions.API.ChatManager.ChatEvent obj)
+		{
 
+			if (obj.sourceUserId == 0)
+				return;
+			bool isadmin = SandboxGameAssemblyWrapper.Instance.IsUserAdmin(obj.sourceUserId);
+
+			if (obj.message[0] == '.')
+			{
+
+				string[] words = obj.message.Split(' ');
+				string rem = "";
+				//proccess
+				if (words[0] == ".set")
+				{
+
+				}
+
+
+
+				if (isadmin && words[0] == ".pm-enable")
+				{
+					m_meteoron = true;
+					return;
+				}
+
+				if (isadmin && words[0] == ".pm-disable")
+				{
+					m_meteoron = false;
+					return;
+				}
+			}
+			return;
+		}
+		public void OnChatSent(SEModAPIExtensions.API.ChatManager.ChatEvent obj)
+		{
+			//do nothing
+			return;
+		}
 		#endregion
 
 
