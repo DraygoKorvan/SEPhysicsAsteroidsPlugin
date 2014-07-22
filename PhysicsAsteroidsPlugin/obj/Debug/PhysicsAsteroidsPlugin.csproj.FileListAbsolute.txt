@@ -10,8 +10,6 @@ D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\PhysicsAsteroidsPlugin\b
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\PhysicsAsteroidsPlugin\bin\Debug\PhysicsAsteroidsPlugin.pdb
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\PhysicsAsteroidsPlugin\obj\Debug\PhysicsAsteroidsPlugin.dll
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\PhysicsAsteroidsPlugin\obj\Debug\PhysicsAsteroidsPlugin.pdb
-D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\PhysicsAsteroidsPlugin.dll
-D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\PhysicsAsteroidsPlugin.pdb
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\Sandbox.Common.dll
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\Sandbox.Common.XmlSerializers.dll
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SEModAPI.dll
@@ -20,10 +18,12 @@ D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\VRage.Common.dll
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\VRage.Math.dll
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\obj\Debug\PhysicsAsteroidsPlugin.csprojResolveAssemblyReference.cache
-D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\obj\Debug\PhysicsAsteroidsPlugin.dll
-D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\obj\Debug\PhysicsAsteroidsPlugin.pdb
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\HavokWrapper.dll
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\Sandbox.Game.dll
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\Sandbox.Input.dll
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\Sandbox.Graphics.dll
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\Sandbox.Audio.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\PhysicsMeteroidsPlugin.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\PhysicsMeteroidsPlugin.pdb
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\obj\Debug\PhysicsMeteroidsPlugin.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\obj\Debug\PhysicsMeteroidsPlugin.pdb

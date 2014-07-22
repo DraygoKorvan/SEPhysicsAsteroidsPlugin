@@ -7,8 +7,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>PhysicsAsteroidsPlugin</RootNamespace>
-    <AssemblyName>PhysicsAsteroidsPlugin</AssemblyName>
+    <RootNamespace>PhysicsMeteroidsPlugin</RootNamespace>
+    <AssemblyName>PhysicsMeteroidsPlugin</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>

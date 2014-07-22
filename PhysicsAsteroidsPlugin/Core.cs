@@ -31,10 +31,10 @@ using VRage.Common.Utils;
 
 
 
-namespace PhysicsAsteroidsPlugin
+namespace PhysicsMeteroidsPlugin
 {
 	[Serializable()]
-	public class PhysicsAsteroidCore : PluginBase, IChatEventHandler
+	public class PhysicsMeteroidCore : PluginBase, IChatEventHandler
 	{
 		
 		#region "Attributes"
@@ -67,7 +67,7 @@ namespace PhysicsAsteroidsPlugin
 
 		public void Core()
 		{
-			Console.WriteLine("PhysicsAsteroidPlugin '" + Id.ToString() + "' constructed!");	
+			Console.WriteLine("PhysicsMeteoroidPlugin '" + Id.ToString() + "' constructed!");	
 		}
 
 		public override void Init()
@@ -77,7 +77,7 @@ namespace PhysicsAsteroidsPlugin
 			m_maxVelocityFctr = 1F;
 			m_velocityFctr = 3F;
 			m_ore_amt = 60000;
-			Console.WriteLine("PhysicsAsteroidPlugin '" + Id.ToString() + "' initialized!");
+			Console.WriteLine("PhysicsMeteoroidPlugin '" + Id.ToString() + "' initialized!");
 			loadXML();
 		}
 
@@ -85,8 +85,8 @@ namespace PhysicsAsteroidsPlugin
 
 		#region "Properties"
 
-		[Category("Physics Meteor Plugin")]
-		[Description("Maximum meteor size.")]
+		[Category("Physics Meteoriod Plugin")]
+		[Description("Maximum meteoriod size.")]
 		[Browsable(true)]
 		[ReadOnly(false)]
 		public double ore_amt
@@ -102,7 +102,7 @@ namespace PhysicsAsteroidsPlugin
 			get { return System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\"; }
 		
 		}
-		[Category("Physics Meteor Plugin")]
+		[Category("Physics Meteoriod Plugin")]
 		[Description("Set Maximum velocity (does not work yet)")]
 		[Browsable(true)]
 		[ReadOnly(false)]
@@ -112,7 +112,7 @@ namespace PhysicsAsteroidsPlugin
 			get { return m_maxVelocityFctr; }
 			set { m_maxVelocityFctr = value; }
 		}
-		[Category("Physics Meteor Plugin")]
+		[Category("Physics Meteoriod Plugin")]
 		[Description("Multiply original velocity by this factor.")]
 		[Browsable(true)]
 		[ReadOnly(false)]
@@ -123,8 +123,8 @@ namespace PhysicsAsteroidsPlugin
 			set { m_velocityFctr = value; }
 		}
 
-		[Category("Physics Meteor Plugin")]
-		[Description("Enables or Disables meteor swarms")]
+		[Category("Physics Meteoriod Plugin")]
+		[Description("Enables or Disables meteoriod swarms")]
 		[Browsable(true)]
 		[ReadOnly(false)]
 		public bool meteoron
@@ -139,21 +139,21 @@ namespace PhysicsAsteroidsPlugin
 		public void saveXML()
 		{
 
-			XmlSerializer x = new XmlSerializer(typeof(PhysicsAsteroidCore));
+			XmlSerializer x = new XmlSerializer(typeof(PhysicsMeteroidCore));
 			TextWriter writer = new StreamWriter(Location + "Configuration.xml");
 			x.Serialize(writer, this);
 			writer.Close();
 
 		}
-		public void loadXML()
+		public void loadXML(bool l_default)
 		{
 			try
 			{
 				if (File.Exists(Location + "Configuration.xml"))
 				{
-					XmlSerializer x = new XmlSerializer(typeof(PhysicsAsteroidCore));
+					XmlSerializer x = new XmlSerializer(typeof(PhysicsMeteroidCore));
 					TextReader reader = new StreamReader(Location + "Configuration.xml");
-					PhysicsAsteroidCore obj = (PhysicsAsteroidCore)x.Deserialize(reader);
+					PhysicsMeteroidCore obj = (PhysicsMeteroidCore)x.Deserialize(reader);
 					meteoron = obj.meteoron;
 					velocityFctr = obj.velocityFctr;
 					maxVelocityFctr = obj.maxVelocityFctr;
@@ -166,6 +166,10 @@ namespace PhysicsAsteroidsPlugin
 				LogManager.APILog.WriteLineAndConsole("Could not load configuration:" + ex.ToString());
 			}
 
+		}
+		public void loadXML()
+		{
+			loadXML(false);
 		}
 		public void velocityloop(FloatingObject obj, Vector3Wrapper vel)
 		{
@@ -247,8 +251,8 @@ namespace PhysicsAsteroidsPlugin
 				throw new PMNoPlayersException("No players found");
 
 
-			int targetno = (int)Math.Floor(m_gen.NextDouble() * playerList.Count());
-			if (targetno > playerList.Count()) throw new PMNoTargetException("Invalid Target");
+			int targetno = m_gen.Next(playerList.Count());
+			if (targetno > playerList.Count() || targetno < 0) throw new PMNoTargetException("Invalid Target");
 			ulong utarget = playerList[targetno];
 
 			//convert utarget to target, target is just an id. not supported in API yet
@@ -285,7 +289,7 @@ namespace PhysicsAsteroidsPlugin
 			else
 				throw new PMNoTargetException("Invalid Target");
 		}
-		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel)
+		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel, Vector3Wrapper up, Vector3Wrapper forward)
 		{
 			MyObjectBuilder_FloatingObject tempobject;
 			MyObjectBuilder_Ore tempore = new MyObjectBuilder_Ore();
@@ -305,8 +309,8 @@ namespace PhysicsAsteroidsPlugin
 
 			physicsmeteor = new FloatingObject(tempobject);
 			physicsmeteor.EntityId = FloatingObject.GenerateEntityId();
-			//physicsmeteor.Up = up;
-			//physicsmeteor.Forward = forward;
+			physicsmeteor.Up = up;
+			physicsmeteor.Forward = forward;
 			physicsmeteor.Position = spawnpos;
 			physicsmeteor.LinearVelocity = vel;
 			physicsmeteor.MaxLinearVelocity = 104.7F * m_maxVelocityFctr;
@@ -318,6 +322,11 @@ namespace PhysicsAsteroidsPlugin
 			//workaround for the velocity problem.
 			Thread physicsthread = new Thread(() => velocityloop(physicsmeteor, vel));
 			physicsthread.Start();	
+
+		}
+		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel)
+		{
+			spawnMeteor(spawnpos, vel, new Vector3Wrapper(), new Vector3Wrapper());
 
 		}
 		private string getRandomOre()
@@ -366,12 +375,6 @@ namespace PhysicsAsteroidsPlugin
 			Vector3Wrapper pos;
 			Vector3Wrapper velocity;
 			
-			MyObjectBuilder_FloatingObject tempobject;
-			MyObjectBuilder_Ore tempore = new MyObjectBuilder_Ore();
-			MyObjectBuilder_InventoryItem tempitem = new MyObjectBuilder_InventoryItem();
-			tempore.SetDefaultProperties();
-			FloatingObject physicsmeteor;
-			
 			List<ulong> connectedPlayers = ServerNetworkManager.Instance.GetConnectedPlayers();
 			List<Meteor> entityList = SectorObjectManager.Instance.GetTypedInternalData<Meteor>();
 
@@ -399,36 +402,7 @@ namespace PhysicsAsteroidsPlugin
 					{
 						try
 						{
-							m_ore_fctr = m_gen.NextDouble();
-
-							tempitem = (MyObjectBuilder_InventoryItem)MyObjectBuilder_InventoryItem.CreateNewObject(m_InventoryItemType);
-							//Setup the properties of the inventory item
-
-
-							tempitem.PhysicalContent = (MyObjectBuilder_PhysicalObject)MyObjectBuilder_PhysicalObject.CreateNewObject(m_OreType);
-							tempitem.PhysicalContent.SubtypeName = getRandomOre();
-							tempitem.AmountDecimal = Math.Round( (decimal)(m_ore_amt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr) );
-							tempitem.ItemId = 0;
-
-							tempobject = (MyObjectBuilder_FloatingObject)MyObjectBuilder_FloatingObject.CreateNewObject(m_FloatingObjectType);
-							tempobject.Item = tempitem;
-
-							physicsmeteor = new FloatingObject(tempobject);
-							physicsmeteor.EntityId = FloatingObject.GenerateEntityId();
-							physicsmeteor.Up = up;
-							physicsmeteor.Forward = forward;
-							physicsmeteor.Position = pos;
-							physicsmeteor.LinearVelocity = velocity;
-							physicsmeteor.MaxLinearVelocity = 104.7F * m_maxVelocityFctr;
-							if (SandboxGameAssemblyWrapper.IsDebugging)
-							{
-								LogManager.APILog.WriteLineAndConsole("Meteor entityID: " + physicsmeteor.EntityId.ToString() + " Velocity: " + velocity.ToString());
-							}
-							SectorObjectManager.Instance.AddEntity(physicsmeteor);
-							//workaround for the velocity problem.
-							Thread physicsthread = new Thread(() => velocityloop(physicsmeteor, velocity));
-							physicsthread.Start();								
-							
+							spawnMeteor(pos, velocity, up, forward);					
 						}
 						catch (Exception ex)
 						{
@@ -465,11 +439,18 @@ namespace PhysicsAsteroidsPlugin
 				string[] words = obj.message.Split(' ');
 				string rem = "";
 				//proccess
-				if (words[0] == ".set")
+				if (words.Count() > 2 && isadmin)
 				{
-
+					rem = String.Join(" ", words, 2, words.Count() - 2);
+					if (words[0] == ".set")
+					{
+						
+						if (words[1] == "ore_amt")
+						{
+							ore_amt = Convert.ToDouble(rem.Trim());
+						}
+					}
 				}
-
 
 
 				if (isadmin && words[0] == ".pm-enable")
@@ -481,6 +462,17 @@ namespace PhysicsAsteroidsPlugin
 				if (isadmin && words[0] == ".pm-disable")
 				{
 					m_meteoron = false;
+					return;
+				}
+
+				if (isadmin && words[0] == ".pm-save")
+				{
+					saveXML();
+					return;
+				}
+				if (isadmin && words[0] == ".pm-loaddefault")
+				{
+					loadXML(true);
 					return;
 				}
 			}
