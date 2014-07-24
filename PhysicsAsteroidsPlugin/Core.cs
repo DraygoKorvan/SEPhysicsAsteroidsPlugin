@@ -329,24 +329,25 @@ namespace PhysicsMeteroidsPlugin
 				for (int i = 0; i < ranmeteor; i++)
 				{
 					Thread.Sleep(100);
-					spawnMeteor(
-						Vector3.Add(
-							stormpos, 
+					Vector3Wrapper spawnPos = Vector3.Add(
+							stormpos,
 							Vector3.Multiply(
 								Vector3.Normalize(
 									new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)
 									),
 								100) //distance in meters for the spawn sphere
-							), 
-						Vector3.Add(
-							Vector3.Multiply(
-								velnorm, 
-								(float)((50d + m_gen.NextDouble() * 55d) * m_velocityFctr)
-								),
+							);
+					float vel = (float)((50d + m_gen.NextDouble() * 55d) * m_velocityFctr);
+					if (vel > m_maxVelocityFctr * 104.7F) vel = 104.7F * m_maxVelocityFctr;
+					//Vector3Wrapper intercept = Vector3.Multiply(
+					//			velnorm,
+					//			vel
+					//			);
+					Vector3Wrapper intercept = FindInterceptVector(spawnPos, vel, pos, target.LinearVelocity);
+					Vector3Wrapper velvector = Vector3.Add(intercept,
 							Vector3.Multiply(Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), 0.2F)//randomize the vector by a small amount
-							)
-						);
-
+							);
+					spawnMeteor(spawnPos, velvector);
 				}
 			}
 			catch (PMNoPlayersException)
@@ -362,6 +363,35 @@ namespace PhysicsMeteroidsPlugin
 			catch (Exception ex)
 			{
 				LogManager.APILog.WriteLineAndConsole(ex.ToString());
+			}
+		}
+
+		//Ref Danik from DanikGames http://danikgames.com/blog/?p=809
+		private Vector3 FindInterceptVector(Vector3 spawnOrigin, float meteoroidSpeed, Vector3 targetOrigin, Vector3 targetVel)
+		{
+
+			Vector3 dirToTarget = Vector3.Normalize(targetOrigin - spawnOrigin);
+
+
+			Vector3 targetVelOrth =
+			Vector3.Dot(targetVel, dirToTarget) * dirToTarget;
+
+			Vector3 targetVelTang = targetVel - targetVelOrth;
+
+			Vector3 shotVelTang = targetVelTang;
+
+			// Now all we have to find is the orthogonal velocity of the shot
+
+			float shotVelSpeed = shotVelTang.Length();
+			if (shotVelSpeed > meteoroidSpeed)
+			{
+				return Vector3.Multiply(targetVel, meteoroidSpeed);
+			}
+			else
+			{
+				float shotSpeedOrth = (float)Math.Sqrt(meteoroidSpeed * meteoroidSpeed - shotVelSpeed * shotVelSpeed);
+				Vector3 shotVelOrth = dirToTarget * shotSpeedOrth;
+				return shotVelOrth + shotVelTang;
 			}
 		}
 		private ulong pickPlayer(List<ulong> playerList)
@@ -407,15 +437,13 @@ namespace PhysicsMeteroidsPlugin
 			{
 				try
 				{
+					if (item.CubeBlocks.Count <= 20) continue;
 					if (!targetplayer)
 					{
-						//ignore small targets. 
-						if(item.CubeBlocks.Count > 20)
-							targets.Add(item);
+						targets.Add(item);
 					}
 					else
 					{
-
 						foreach (var cubeBlock in item.CubeBlocks)
 						{
 							if (cubeBlock.Owner == target)
@@ -425,13 +453,13 @@ namespace PhysicsMeteroidsPlugin
 							}
 						}
 					}
-						
 				}
 				catch (Exception ex)
 				{
 					LogManager.APILog.WriteLine(ex);
 				}
 			}
+			if (targets.Count == 0) throw new PMNoTargetException("No targets availible");
 			targetno = m_gen.Next(targets.Count());
 			if (targetno > targets.Count()) throw new PMNoTargetException("Invalid Target");
 			if (SandboxGameAssemblyWrapper.IsDebugging)
@@ -638,7 +666,6 @@ namespace PhysicsMeteroidsPlugin
 				if (isadmin && words[0] == "/pm-spawnwave")
 				{
 					Thread t = new Thread(createMeteorStorm);
-					//createMeteorStorm();
 					t.Start();
 					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Starting meteoriod storm");
 					return;
