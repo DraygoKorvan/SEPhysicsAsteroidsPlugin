@@ -32,52 +32,96 @@ using VRage.Common.Utils;
 
 
 
+
+
 namespace PhysicsMeteroidsPlugin
 {
 	[Serializable()]
+	public class PhysicsMeteroidSettings
+	{
+		private double m_ore_amt = 60000;
+
+		private float m_maxVelocityFctr = 1F;
+		private float m_velocityFctr = 3F;
+		private UInt32 m_spawnDistance = 3000;
+		private float m_spawnAcc = 0.2F;
+		private int m_maxMeteoroidAmt = 10;
+		private int m_minMeteoroidAmt = 1;
+		private int m_interval = 300;
+		private int m_ranInterval = 60;
+		private bool m_meteorOn = true;
+
+		public double ore_amt
+		{
+			get { return m_ore_amt; }
+			set { m_ore_amt = value; }
+		}
+		public float maxVelocityFctr
+		{
+			get { return m_maxVelocityFctr; }
+			set { m_maxVelocityFctr = value;  }
+		}
+		public float velocityFctr
+		{
+			get { return m_velocityFctr; }
+			set { m_velocityFctr = value; }
+		}
+		public UInt32 spawnDistance
+		{
+			get { return m_spawnDistance; }
+			set { m_spawnDistance = value; }
+		}
+		public float spawnAcc
+		{
+			get { return m_spawnAcc; }
+			set { m_spawnAcc = value; }
+		}
+		public int maxMeteoroidAmt
+		{
+			get { return m_maxMeteoroidAmt;  }
+			set { if(value >= m_minMeteoroidAmt) m_maxMeteoroidAmt = value; }
+		}
+		public int minMeteoroidAmt
+		{
+			get { return m_minMeteoroidAmt; }
+			set { if( value <= m_maxMeteoroidAmt) m_minMeteoroidAmt = value; }
+		}
+		public int interval
+		{
+			get { return m_interval; }
+			set { if (value > 30) m_interval = value; }
+		}
+		public int randInterval
+		{
+			get { return m_ranInterval; }
+			set { if( value > 0) m_ranInterval = value; }
+		}
+		public bool meteorOn
+		{
+			get { return m_meteorOn; }
+			set { m_meteorOn = value; }
+		}
+	}
+
 	public class PhysicsMeteroidCore : PluginBase, IChatEventHandler
 	{
 		
 		#region "Attributes"
-		[field: NonSerialized()]
-		private double m_ore_amt = 60000;
-		[field: NonSerialized()]
-		private double m_ore_fctr = 1;
-		[field: NonSerialized()]
-		private float m_maxVelocityFctr = 1F;
-		[field: NonSerialized()]
-		private float m_velocityFctr = 3F;
+
+		PhysicsMeteroidSettings settings;
 		
-		[field: NonSerialized()]
-		private int m_maxmeteoramt = 10;
-		[field: NonSerialized()]
-		private int m_minmeteoramt = 1;
-		[field: NonSerialized()]
-		private int m_interval = 300;
-		[field: NonSerialized()]
-		private int m_randinterval = 60;
-		
-		[field: NonSerialized()]
 		private bool m_running = false;
-		[field: NonSerialized()]
 		private bool m_control = false;
-		[field: NonSerialized()]
-		private bool m_meteoron = true;
+		private double m_ore_fctr = 1;
 
 
-		[field: NonSerialized()]
 		private Thread meteorcheck;
-		[field: NonSerialized()]
 		private Thread controlloop;
 
-		[field: NonSerialized()]
 		private static Type m_InventoryItemType = new MyObjectBuilderType(typeof(MyObjectBuilder_InventoryItem));
-		[field: NonSerialized()]
 		private static Type m_OreType = new MyObjectBuilderType(typeof(MyObjectBuilder_Ore));
-		[field: NonSerialized()]
 		private static Type m_FloatingObjectType = new MyObjectBuilderType(typeof(MyObjectBuilder_FloatingObject));
 		
-		[field: NonSerialized()]
 		private Random m_gen;
 
 		#endregion
@@ -91,14 +135,19 @@ namespace PhysicsMeteroidsPlugin
 
 		public override void Init()
 		{
+			settings = new PhysicsMeteroidSettings();
 			m_running = false;
 			m_control = false;
 			m_gen = new Random(3425325);//temp hash
-			m_maxVelocityFctr = 1F;
-			m_velocityFctr = 3F;
-			m_ore_amt = 60000;
-			m_maxmeteoramt = 10;
-			m_minmeteoramt = 1;
+			settings.maxVelocityFctr = 1F;
+			settings.velocityFctr = 3F;
+			settings.ore_amt = 60000;
+			settings.maxMeteoroidAmt = 10;
+			settings.minMeteoroidAmt = 1;
+			settings.spawnDistance = 3000;
+			settings.spawnAcc = 0.2F;
+			settings.meteorOn = true;
+
 			Console.WriteLine("PhysicsMeteoroidPlugin '" + Id.ToString() + "' initialized!");
 			loadXML();
 
@@ -119,16 +168,23 @@ namespace PhysicsMeteroidsPlugin
 		[ReadOnly(false)]
 		public double ore_amt
 		{
-			get { return m_ore_amt; }
-			set { if (value > 0) m_ore_amt = value; }
+			get { return settings.ore_amt; }
+			set { if (value > 0) settings.ore_amt = value; }
 		}
-		
+
+		[Browsable(true)]
+		[ReadOnly(true)]
+		public string DefaultLocation
+		{
+			get { return System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\"; }
+
+		}
 		[Browsable(true)]
 		[ReadOnly(true)]
 		public string Location
 		{
-			get { return System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "\\"; }
-		
+			get { return SandboxGameAssemblyWrapper.Instance.GetServerConfig().LoadWorld + "\\"; }
+
 		}
 
 		[Category("Utils")]
@@ -178,8 +234,8 @@ namespace PhysicsMeteroidsPlugin
 		
 		public float maxVelocityFctr
 		{
-			get { return m_maxVelocityFctr; }
-			set { m_maxVelocityFctr = value; }
+			get { return settings.maxVelocityFctr; }
+			set { settings.maxVelocityFctr = value; }
 		}
 		[Category("Physics Meteoriod Plugin")]
 		[Description("Multiply original velocity by this factor.")]
@@ -188,8 +244,8 @@ namespace PhysicsMeteroidsPlugin
 		
 		public float velocityFctr
 		{
-			get { return m_velocityFctr; }
-			set { m_velocityFctr = value; }
+			get { return settings.velocityFctr; }
+			set { settings.velocityFctr = value; }
 		}
 
 		[Category("Physics Meteoriod Plugin")]
@@ -198,8 +254,8 @@ namespace PhysicsMeteroidsPlugin
 		[ReadOnly(false)]
 		public bool meteoron
 		{
-			get { return m_meteoron; }
-			set { if (value) m_meteoron = true; else m_meteoron = false; }
+			get { return settings.meteorOn; }
+			set { settings.meteorOn = value; }
 		}
 
 		[Category("Physics Meteoriod Plugin")]
@@ -208,8 +264,8 @@ namespace PhysicsMeteroidsPlugin
 		[ReadOnly(false)]
 		public int max_meteoramt
 		{
-			get { return m_maxmeteoramt; }
-			set { if (value > 1) m_maxmeteoramt = value; else m_maxmeteoramt = 0; }
+			get { return settings.maxMeteoroidAmt; }
+			set { settings.maxMeteoroidAmt = value; ; }
 		}
 
 		[Category("Physics Meteoriod Plugin")]
@@ -218,19 +274,8 @@ namespace PhysicsMeteroidsPlugin
 		[ReadOnly(false)]
 		public int min_meteoramt
 		{
-			get { return m_minmeteoramt; }
-			set {
-				if (value <= max_meteoramt)
-				{
-					if (value > 0)
-					{
-						m_minmeteoramt = value;
-					}
-					else m_minmeteoramt = 0;
-				}
-				else
-					m_minmeteoramt = m_maxmeteoramt;
-			}
+			get { return settings.minMeteoroidAmt; }
+			set	{ settings.minMeteoroidAmt = value; }
 		}
 
 		[Category("Physics Meteoriod Plugin")]
@@ -239,8 +284,8 @@ namespace PhysicsMeteroidsPlugin
 		[ReadOnly(false)]
 		public int interval
 		{
-			get { return m_interval; }
-			set { if (m_interval > 60) m_interval = value; }
+			get { return settings.interval; }
+			set { if (settings.interval > 60) settings.interval = value; }
 
 		}
 
@@ -250,20 +295,45 @@ namespace PhysicsMeteroidsPlugin
 		[ReadOnly(false)]
 		public int randinterval
 		{
-			get { return m_randinterval; }
-			set { if (m_randinterval >= 0) m_randinterval = value; }
+			get { return settings.randInterval; }
+			set { if (settings.randInterval >= 0) settings.randInterval = value; }
+
+		}
+
+		[Category("Physics Meteoriod Plugin")]
+		[Description("Distance Meteroids spawn at, closer is more accurate.")]
+		[Browsable(true)]
+		[ReadOnly(false)]
+		public UInt32 spawnDistance 
+		{
+			get { return settings.spawnDistance; }
+			set { settings.spawnDistance = value; }
+
+		}
+		[Category("Physics Meteoriod Plugin")]
+		[Description("How accurate meteroids are, 0 is perfect, larger is less accurate.")]
+		[Browsable(true)]
+		[ReadOnly(false)]
+		public float spawnAcc
+		{
+			get { return settings.spawnAcc; }
+			set { settings.spawnAcc = value; }
 
 		}
 		#endregion
 
 		#region "Methods"
-
+		private void debugWrite(string message)
+		{
+			if (SandboxGameAssemblyWrapper.IsDebugging)
+				LogManager.APILog.WriteLineAndConsole(message);
+		}
 		public void saveXML()
 		{
 
-			XmlSerializer x = new XmlSerializer(typeof(PhysicsMeteroidCore));
-			TextWriter writer = new StreamWriter(Location + "Configuration.xml");
-			x.Serialize(writer, this);
+			XmlSerializer x = new XmlSerializer(typeof(PhysicsMeteroidSettings));
+			TextWriter writer = new StreamWriter(Location + "PhysicsMeteroid-Settings.xml");
+			x.Serialize(writer, settings);
 			writer.Close();
 
 		}
@@ -271,23 +341,35 @@ namespace PhysicsMeteroidsPlugin
 		{
 			try
 			{
-				if (File.Exists(Location + "Configuration.xml"))
+				if (File.Exists(Location + "PhysicsMeteroid-Settings.xml") && !l_default)
 				{
-					XmlSerializer x = new XmlSerializer(typeof(PhysicsMeteroidCore));
-					TextReader reader = new StreamReader(Location + "Configuration.xml");
-					PhysicsMeteroidCore obj = (PhysicsMeteroidCore)x.Deserialize(reader);
-					meteoron = obj.meteoron;
-					velocityFctr = obj.velocityFctr;
-					maxVelocityFctr = obj.maxVelocityFctr;
-					ore_amt = obj.ore_amt;
-					min_meteoramt = obj.min_meteoramt;
-					max_meteoramt = obj.max_meteoramt; 
+
+					XmlSerializer x = new XmlSerializer(typeof(PhysicsMeteroidSettings));
+					TextReader reader = new StreamReader(Location + "PhysicsMeteroid-Settings.xml");
+					PhysicsMeteroidSettings obj = (PhysicsMeteroidSettings)x.Deserialize(reader);
+					settings = obj;
+					reader.Close();
+					return;
+				}
+			}
+			catch (Exception ex)
+			{
+				LogManager.APILog.WriteLineAndConsole("Could not load configuration: " + ex.ToString());
+			}
+			try
+			{
+				if (File.Exists(DefaultLocation + "PhysicsMeteroid-Settings.xml"))
+				{
+					XmlSerializer x = new XmlSerializer(typeof(PhysicsMeteroidSettings));
+					TextReader reader = new StreamReader(DefaultLocation + "PhysicsMeteroid-Settings.xml");
+					PhysicsMeteroidSettings obj = (PhysicsMeteroidSettings)x.Deserialize(reader);
+					settings = obj;
 					reader.Close();
 				}
 			}
 			catch (Exception ex)
 			{
-				LogManager.APILog.WriteLineAndConsole("Could not load configuration:" + ex.ToString());
+				LogManager.APILog.WriteLineAndConsole("Could not load configuration: " + ex.ToString());
 			}
 
 		}
@@ -302,7 +384,7 @@ namespace PhysicsMeteroidsPlugin
 			{
 				if (obj.Mass > 0)
 				{
-					obj.MaxLinearVelocity = 104.7F * m_maxVelocityFctr;
+					obj.MaxLinearVelocity = 104.7F * maxVelocityFctr;
 					obj.LinearVelocity = vel;
 					if (SandboxGameAssemblyWrapper.IsDebugging)
 					{
@@ -319,33 +401,35 @@ namespace PhysicsMeteroidsPlugin
 		{
 			try
 			{
-				int ranmeteor = m_gen.Next(m_maxmeteoramt - m_minmeteoramt) + m_minmeteoramt;
-				if (ranmeteor == 0) return;		
-				CubeGridEntity target = findTarget(false);
+				int ranmeteor = m_gen.Next(max_meteoramt - min_meteoramt) + min_meteoramt;
+				if (ranmeteor == 0) return;
+				float vel = 0F;
+				Vector3Wrapper intercept;
+				Vector3Wrapper velvector;
+				Vector3Wrapper spawnPos;
+				CubeGridEntity target = findTarget(true);
 				Vector3Wrapper pos = target.Position;
 				Vector3Wrapper velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
-				Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), 3000));
+				Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), spawnDistance));
 				//spawn meteors in a random position around stormpos with the velocity of velnorm
 				for (int i = 0; i < ranmeteor; i++)
 				{
 					Thread.Sleep(100);
-					Vector3Wrapper spawnPos = Vector3.Add(
+					spawnPos = Vector3.Add(
 							stormpos,
 							Vector3.Multiply(
-								Vector3.Normalize(
-									new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)
-									),
+								new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1),
 								100) //distance in meters for the spawn sphere
 							);
-					float vel = (float)((50d + m_gen.NextDouble() * 55d) * m_velocityFctr);
-					if (vel > m_maxVelocityFctr * 104.7F) vel = 104.7F * m_maxVelocityFctr;
+					vel = (float)((50d + m_gen.NextDouble() * 55d) * velocityFctr);
+					if (vel > maxVelocityFctr * 104.7F) vel = 104.7F * maxVelocityFctr;
 					//Vector3Wrapper intercept = Vector3.Multiply(
 					//			velnorm,
 					//			vel
 					//			);
-					Vector3Wrapper intercept = FindInterceptVector(spawnPos, vel, pos, target.LinearVelocity);
-					Vector3Wrapper velvector = Vector3.Add(intercept,
-							Vector3.Multiply(Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), 0.2F)//randomize the vector by a small amount
+					intercept = FindInterceptVector(spawnPos, vel, pos, target.LinearVelocity);
+					velvector = Vector3.Add(intercept,
+							Vector3.Multiply(Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), spawnAcc)//randomize the vector by a small amount
 							);
 					spawnMeteor(spawnPos, velvector);
 				}
@@ -406,6 +490,36 @@ namespace PhysicsMeteroidsPlugin
 			ulong utarget = playerList[targetno];
 			return utarget;
 		}
+		private long getOwnerFromSteamId(ulong steamid)
+		{
+			//probably should cache this but w/e we can make this low priority
+			//string huntline = "          <SteamID>" + steamid + " </SteamID>";
+			XmlTextReader reader = new XmlTextReader(Location + "Sandbox.sbc");
+			bool nextplayerid = false;
+			while(reader.Read())
+			{
+
+				switch (reader.NodeType) 
+				{
+				 case XmlNodeType.Element:
+						if (reader.Name == "SteamID")
+						{
+							reader.Read();
+							debugWrite("Compare " + steamid + " to xml " + reader.Value.ToString());
+							if((ulong)Convert.ToInt64(reader.Value) == steamid)
+								nextplayerid = true;
+						}
+						if (reader.Name == "PlayerId" && nextplayerid)
+						{
+							reader.Read();
+							return Convert.ToInt64(reader.Value);
+						}
+				   break;
+			   }       
+			}
+			return 0;
+		}
+
 		private CubeGridEntity findTarget(bool targetplayer = true)
 		{
 			//pull online players
@@ -415,10 +529,14 @@ namespace PhysicsMeteroidsPlugin
 				throw new PMNoPlayersException("No players on server aborting.");
 			List<CubeGridEntity> targets = new List<CubeGridEntity>();
 			int targetno = 0;
+			ulong utarget = 0;
+			long targetowner = 0;
 			//convert utarget to target, target is just an id. not supported in API yet
 			try
 			{
-				ulong utarget = pickPlayer(playerList);
+				utarget = pickPlayer(playerList);
+				targetowner = getOwnerFromSteamId(utarget);
+				debugWrite("Selected player: " + targetowner);
 			}
 			catch (PMNoTargetException)
 			{
@@ -430,7 +548,7 @@ namespace PhysicsMeteroidsPlugin
 			{
 				throw;//throw any other exception
 			}
-			long target = 0;//set to targetid obtained from utarget
+			//set to targetid obtained from utarget
 
 			List<CubeGridEntity> list = SectorObjectManager.Instance.GetTypedInternalData<CubeGridEntity>();
 			foreach (var item in list)
@@ -444,12 +562,22 @@ namespace PhysicsMeteroidsPlugin
 					}
 					else
 					{
+						//debugWrite("Checking entity if valid: " + item.EntityId.ToString());
+						
 						foreach (var cubeBlock in item.CubeBlocks)
 						{
-							if (cubeBlock.Owner == target)
+							if(cubeBlock.Owner > 0)
 							{
-								targets.Add(item);
-								break;
+								
+								//debugWrite("Checking for owner: " + cubeBlock.Owner + "compare to " + targetowner);
+								//debugWrite("SteamId of owner? " + PlayerMap.Instance.GetSteamId(cubeBlock.Owner) + " compare to " + utarget);
+								
+								if (cubeBlock.Owner == targetowner && item.CubeBlocks.Count > 20)
+								{
+									debugWrite("Target Found, adding to target list.");
+									targets.Add(item);
+									break;
+								}
 							}
 						}
 					}
@@ -461,11 +589,9 @@ namespace PhysicsMeteroidsPlugin
 			}
 			if (targets.Count == 0) throw new PMNoTargetException("No targets availible");
 			targetno = m_gen.Next(targets.Count());
+			//debugWrite("Picked number " + targetno.ToString() + " in list");
 			if (targetno > targets.Count()) throw new PMNoTargetException("Invalid Target");
-			if (SandboxGameAssemblyWrapper.IsDebugging)
-			{
-				LogManager.APILog.WriteLineAndConsole("Selected target entityID: " + targets[targetno].EntityId.ToString());
-			}
+			debugWrite("Selected target entityID: " + targets[targetno].EntityId.ToString());
 			return targets[targetno];
 		}
 		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel, Vector3Wrapper up, Vector3Wrapper forward)
@@ -484,19 +610,18 @@ namespace PhysicsMeteroidsPlugin
 			tempitem = (MyObjectBuilder_InventoryItem)MyObjectBuilder_InventoryItem.CreateNewObject(m_InventoryItemType);
 			tempitem.PhysicalContent = (MyObjectBuilder_PhysicalObject)MyObjectBuilder_PhysicalObject.CreateNewObject(m_OreType);
 			tempitem.PhysicalContent.SubtypeName = getRandomOre();
-			tempitem.AmountDecimal = Math.Round((decimal)(m_ore_amt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
+			tempitem.AmountDecimal = Math.Round((decimal)(ore_amt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
 			tempitem.ItemId = 0;
 
 			tempobject = (MyObjectBuilder_FloatingObject)MyObjectBuilder_FloatingObject.CreateNewObject(m_FloatingObjectType);
 			tempobject.Item = tempitem;
 
 			physicsmeteor = new FloatingObject(tempobject);
-			physicsmeteor.EntityId = FloatingObject.GenerateEntityId();
 			physicsmeteor.Up = up;
 			physicsmeteor.Forward = forward;
 			physicsmeteor.Position = spawnpos;
 			physicsmeteor.LinearVelocity = vel;
-			physicsmeteor.MaxLinearVelocity = 104.7F * m_maxVelocityFctr;
+			physicsmeteor.MaxLinearVelocity = 104.7F * maxVelocityFctr;
 			if (SandboxGameAssemblyWrapper.IsDebugging)
 			{
 				LogManager.APILog.WriteLineAndConsole("Meteor entityID: " + physicsmeteor.EntityId.ToString() + " Velocity: " + vel.ToString());
@@ -510,7 +635,6 @@ namespace PhysicsMeteroidsPlugin
 		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel)
 		{
 			spawnMeteor(spawnpos, vel, new Vector3Wrapper(0F,1F,0F), new Vector3Wrapper(0F,0F,-1F));
-
 		}
 		private string getRandomOre()
 		{
@@ -549,11 +673,11 @@ namespace PhysicsMeteroidsPlugin
 			m_control = true;
 			while (m_control)
 			{
-				if(m_interval - m_randinterval > 30)
-					Thread.Sleep((m_interval + (int)Math.Floor( (m_gen.NextDouble() * 2 - 1) * m_randinterval) ) * 1000 );
+				if(interval - randinterval > 30)
+					Thread.Sleep((interval + (int)Math.Floor( (m_gen.NextDouble() * 2 - 1) * randinterval) ) * 1000 );
 				else
 					Thread.Sleep(30*1000);
-				if(m_meteoron && m_control)
+				if(meteoron && m_control)
 					createMeteorStorm();
 			}
 			return;
@@ -564,10 +688,6 @@ namespace PhysicsMeteroidsPlugin
 
 			while (m_running)
 			{
-				if (SandboxGameAssemblyWrapper.IsDebugging)
-				{
-					LogManager.APILog.WriteLineAndConsole("PhysicsMeteoroid.meteorScanLoop()");
-				}
 				try
 				{
 					//Thread.BeginCriticalRegion();
@@ -616,9 +736,7 @@ namespace PhysicsMeteroidsPlugin
 			//Thread.Sleep(300);//wait for functions to complete. 
 			m_running = false;
 			m_control = false;
-			m_meteoron = false;
-			m_maxVelocityFctr = 1F;
-			m_velocityFctr = 3F;
+			settings.meteorOn = false;
 			//rejoin the threads, wait for them to terminate, if not force them to terminate.
 			meteorcheck.Join(300);
 			controlloop.Join(300);
@@ -673,14 +791,14 @@ namespace PhysicsMeteroidsPlugin
 				if (isadmin && words[0] == "/pm-enable")
 				{
 					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Automatic Meteoroid storms enabled");
-					m_meteoron = true;
+					settings.meteorOn = true;
 					return;
 				}
 
 				if (isadmin && words[0] == "/pm-disable")
 				{
 					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Automatic Meteoroid storms disabled");
-					m_meteoron = false;
+					settings.meteorOn = false;
 					return;
 				}
 

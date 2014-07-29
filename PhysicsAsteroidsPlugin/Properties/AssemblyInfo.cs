@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("PhysicsAsteroidsPlugin")]
+[assembly: AssemblyTitle("Physics Meteriod Plugin")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("PhysicsAsteroidsPlugin")]
+[assembly: AssemblyProduct("Physics Meteroid Plugin")]
 [assembly: AssemblyCopyright("Copyright © Draygo 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -29,5 +29,5 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-[assembly: AssemblyVersion("0.1.5.3")]
-[assembly: AssemblyFileVersion("0.1.5.3")]
+[assembly: AssemblyVersion("0.2.1.1")]
+[assembly: AssemblyFileVersion("0.2.1.1")]
