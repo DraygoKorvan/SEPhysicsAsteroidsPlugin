@@ -611,6 +611,7 @@ namespace PhysicsMeteroidsPlugin
 			tempitem.PhysicalContent = (MyObjectBuilder_PhysicalObject)MyObjectBuilder_PhysicalObject.CreateNewObject(m_OreType);
 			tempitem.PhysicalContent.SubtypeName = getRandomOre();
 			tempitem.AmountDecimal = Math.Round((decimal)(ore_amt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
+			if (tempitem.AmountDecimal < 1) tempitem.AmountDecimal = 1;
 			tempitem.ItemId = 0;
 
 			tempobject = (MyObjectBuilder_FloatingObject)MyObjectBuilder_FloatingObject.CreateNewObject(m_FloatingObjectType);
