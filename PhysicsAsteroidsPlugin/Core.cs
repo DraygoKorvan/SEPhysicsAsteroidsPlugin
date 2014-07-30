@@ -89,12 +89,12 @@ namespace PhysicsMeteroidsPlugin
 		public int interval
 		{
 			get { return m_interval; }
-			set { if (value > 30) m_interval = value; }
+			set { if (value >= 30) m_interval = value; }
 		}
 		public int randInterval
 		{
 			get { return m_ranInterval; }
-			set { if( value > 0) m_ranInterval = value; }
+			set { if( value >= 0) m_ranInterval = value; }
 		}
 		public bool meteorOn
 		{
@@ -265,7 +265,7 @@ namespace PhysicsMeteroidsPlugin
 		public int max_meteoramt
 		{
 			get { return settings.maxMeteoroidAmt; }
-			set { settings.maxMeteoroidAmt = value; ; }
+			set { settings.maxMeteoroidAmt = value; }
 		}
 
 		[Category("Physics Meteoriod Plugin")]
@@ -285,7 +285,7 @@ namespace PhysicsMeteroidsPlugin
 		public int interval
 		{
 			get { return settings.interval; }
-			set { if (settings.interval > 60) settings.interval = value; }
+			set { settings.interval = value; }
 
 		}
 
@@ -296,7 +296,7 @@ namespace PhysicsMeteroidsPlugin
 		public int randinterval
 		{
 			get { return settings.randInterval; }
-			set { if (settings.randInterval >= 0) settings.randInterval = value; }
+			set { settings.randInterval = value; }
 
 		}
 
@@ -506,7 +506,7 @@ namespace PhysicsMeteroidsPlugin
 						{
 							reader.Read();
 							debugWrite("Compare " + steamid + " to xml " + reader.Value.ToString());
-							if((ulong)Convert.ToInt64(reader.Value) == steamid)
+							if(Convert.ToUInt64(reader.Value) == steamid)
 								nextplayerid = true;
 						}
 						if (reader.Name == "PlayerId" && nextplayerid)
