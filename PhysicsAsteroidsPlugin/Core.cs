@@ -423,11 +423,8 @@ namespace PhysicsMeteroidsPlugin
 							);
 					vel = (float)((50d + m_gen.NextDouble() * 55d) * velocityFctr);
 					if (vel > maxVelocityFctr * 104.7F) vel = 104.7F * maxVelocityFctr;
-					//Vector3Wrapper intercept = Vector3.Multiply(
-					//			velnorm,
-					//			vel
-					//			);
-					intercept = FindInterceptVector(spawnPos, vel, pos, target.LinearVelocity);
+
+					intercept = FindInterceptVector(spawnPos, vel, target.Position, target.LinearVelocity);
 					velvector = Vector3.Add(intercept,
 							Vector3.Multiply(Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), spawnAcc)//randomize the vector by a small amount
 							);
@@ -496,6 +493,7 @@ namespace PhysicsMeteroidsPlugin
 			//string huntline = "          <SteamID>" + steamid + " </SteamID>";
 			XmlTextReader reader = new XmlTextReader(Location + "Sandbox.sbc");
 			bool nextplayerid = false;
+			long foundplayerid = 0;
 			while(reader.Read())
 			{
 
@@ -512,12 +510,13 @@ namespace PhysicsMeteroidsPlugin
 						if (reader.Name == "PlayerId" && nextplayerid)
 						{
 							reader.Read();
-							return Convert.ToInt64(reader.Value);
+							foundplayerid = Convert.ToInt64(reader.Value);
 						}
 				   break;
 			   }       
 			}
-			return 0;
+
+			return foundplayerid;
 		}
 
 		private CubeGridEntity findTarget(bool targetplayer = true)
