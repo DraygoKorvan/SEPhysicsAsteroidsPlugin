@@ -558,7 +558,6 @@ namespace PhysicsMeteroidsPlugin
 				{
 					CockpitEntity targetcockpit = null;
 					List<CubeGridEntity> grids = SectorObjectManager.Instance.GetTypedInternalData<CubeGridEntity>();
-					debugWrite(entityid.ToString());
 					bool loop = true;
 					foreach (CubeGridEntity grid in grids)
 					{
@@ -569,8 +568,6 @@ namespace PhysicsMeteroidsPlugin
 							{
 								targetcockpit = (CockpitEntity)cube;
 								if (targetcockpit.Pilot == null) continue;
-								debugWrite(targetcockpit.Pilot.EntityId.ToString());
-								debugWrite(targetcockpit.Pilot.DisplayName);
 								if (targetcockpit.Pilot.DisplayName == foundname)
 								{
 									loop = false;
