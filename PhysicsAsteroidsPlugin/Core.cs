@@ -39,10 +39,12 @@ namespace PhysicsMeteroidsPlugin
 	[Serializable()]
 	public class PhysicsMeteroidSettings
 	{
-		private double m_ore_amt = 60000;
+		private double m_oreAmt = 6000;
+		private double m_largeOreAmt = 60000;
 
 		private float m_maxVelocityFctr = 1F;
 		private float m_velocityFctr = 3F;
+
 		private UInt32 m_spawnDistance = 3000;
 		private float m_spawnAcc = 0.2F;
 		private int m_maxMeteoroidAmt = 10;
@@ -50,31 +52,37 @@ namespace PhysicsMeteroidsPlugin
 		private int m_interval = 300;
 		private int m_ranInterval = 60;
 		private bool m_meteorOn = true;
+		private int m_spacingTimer = 100;
 
-		public double ore_amt
+		public double oreAmt
 		{
-			get { return m_ore_amt; }
-			set { m_ore_amt = value; }
+			get { return m_oreAmt; }
+			set { if (value > 0.01d) m_oreAmt = value; }
+		}
+		public double largeOreAmt
+		{
+			get { return m_largeOreAmt; }
+			set { if (value > 1d) m_largeOreAmt = value; }
 		}
 		public float maxVelocityFctr
 		{
 			get { return m_maxVelocityFctr; }
-			set { m_maxVelocityFctr = value;  }
+			set {if (value > 0) m_maxVelocityFctr = value;  }
 		}
 		public float velocityFctr
 		{
 			get { return m_velocityFctr; }
-			set { m_velocityFctr = value; }
+			set {  if (value > 0) m_velocityFctr = value; }
 		}
 		public UInt32 spawnDistance
 		{
 			get { return m_spawnDistance; }
-			set { m_spawnDistance = value; }
+			set { if(value >= 10) m_spawnDistance = value; }
 		}
 		public float spawnAcc
 		{
 			get { return m_spawnAcc; }
-			set { m_spawnAcc = value; }
+			set { if (value >= 0) m_spawnAcc = value; }
 		}
 		public int maxMeteoroidAmt
 		{
@@ -100,6 +108,11 @@ namespace PhysicsMeteroidsPlugin
 		{
 			get { return m_meteorOn; }
 			set { m_meteorOn = value; }
+		}
+		public int spacingTimer
+		{
+			get { return m_spacingTimer; }
+			set { if (value > 10) m_spacingTimer = value; else m_spacingTimer = 10; }
 		}
 	}
 
@@ -141,13 +154,14 @@ namespace PhysicsMeteroidsPlugin
 			m_gen = new Random(3425325);//temp hash
 			settings.maxVelocityFctr = 1F;
 			settings.velocityFctr = 3F;
-			settings.ore_amt = 60000;
+			settings.oreAmt = 60000;
+			settings.largeOreAmt = 60000;
 			settings.maxMeteoroidAmt = 10;
 			settings.minMeteoroidAmt = 1;
 			settings.spawnDistance = 3000;
-			settings.spawnAcc = 0.2F;
+			settings.spawnAcc = 3.0F;
 			settings.meteorOn = true;
-
+			settings.spacingTimer = 100;
 			Console.WriteLine("PhysicsMeteoroidPlugin '" + Id.ToString() + "' initialized!");
 			loadXML();
 
@@ -163,15 +177,23 @@ namespace PhysicsMeteroidsPlugin
 		#region "Properties"
 
 		[Category("Physics Meteoriod Plugin")]
-		[Description("Maximum meteoriod size.")]
+		[Description("Maximum meteoriod size for regular meteroids.")]
 		[Browsable(true)]
 		[ReadOnly(false)]
 		public double ore_amt
 		{
-			get { return settings.ore_amt; }
-			set { if (value > 0) settings.ore_amt = value; }
+			get { return settings.oreAmt; }
+			set { if (value > 0) settings.oreAmt = value; }
 		}
-
+		[Category("Physics Meteoriod Plugin")]
+		[Description("Maximum meteoriod size for large meteroids.")]
+		[Browsable(true)]
+		[ReadOnly(false)]
+		public double large_ore_amt
+		{
+			get { return settings.largeOreAmt; }
+			set { if (value > 0) settings.largeOreAmt = value; }
+		}
 		[Browsable(true)]
 		[ReadOnly(true)]
 		public string DefaultLocation
@@ -320,6 +342,16 @@ namespace PhysicsMeteroidsPlugin
 			set { settings.spawnAcc = value; }
 
 		}
+		[Category("Physics Meteoriod Plugin")]
+		[Description("Time between meteoroids in a storm.")]
+		[Browsable(true)]
+		[ReadOnly(false)]
+		public int spacingTimer
+		{
+			get { return settings.spacingTimer; }
+			set { settings.spacingTimer = value; }
+
+		}
 		#endregion
 
 		#region "Methods"
@@ -386,10 +418,9 @@ namespace PhysicsMeteroidsPlugin
 				{
 					obj.MaxLinearVelocity = 104.7F * maxVelocityFctr;
 					obj.LinearVelocity = vel;
-					if (SandboxGameAssemblyWrapper.IsDebugging)
-					{
-						LogManager.APILog.WriteLineAndConsole("Meteor entityID: " + obj.EntityId.ToString() + " Velocity: " + vel.ToString());
-					}
+
+					debugWrite("Meteor entityID: " + obj.EntityId.ToString() + " Velocity: " + vel.ToString());
+					
 					break;
 				}
 				Thread.Sleep(20);
@@ -397,12 +428,188 @@ namespace PhysicsMeteroidsPlugin
 			
 			return;
 		}
+		private void showerPosition(Vector3Wrapper pos)
+		{
+			try
+			{
+				int ranmeteor = m_gen.Next(max_meteoramt - min_meteoramt) + min_meteoramt;
+
+				if (ranmeteor == 0) return;
+				int largemeteor = m_gen.Next(ranmeteor);
+				float vel = 0F;
+				Vector3Wrapper intercept;
+				Vector3Wrapper velvector;
+				Vector3Wrapper spawnPos;
+				//CubeGridEntity target = findTarget(true);
+				//Vector3Wrapper pos = target.Position;
+				Vector3Wrapper velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
+				Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), spawnDistance));
+
+				//spawn meteors in a random position around stormpos with the velocity of velnorm
+				for (int i = 0; i < ranmeteor; i++)
+				{
+					Thread.Sleep(spacingTimer);
+					spawnPos = Vector3.Add(
+							stormpos,
+							Vector3.Multiply(
+								new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1),
+								100) //distance in meters for the spawn sphere
+							);
+					vel = (float)((50d + m_gen.NextDouble() * 55d) * velocityFctr);
+					if (vel > maxVelocityFctr * 104.7F) vel = 104.7F * maxVelocityFctr;
+
+					intercept = FindInterceptVector(spawnPos, vel, pos, new Vector3Wrapper(0,0,0));
+					velvector = Vector3.Add(intercept,
+							Vector3.Multiply(Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), spawnAcc)//randomize the vector by a small amount
+							);
+					spawnMeteor(spawnPos, velvector, (i == largemeteor));
+				}
+			}
+			catch (PMNoPlayersException)
+			{
+				//do nothing
+
+				Console.WriteLine("Meteor Shower Aborted: No players on server");
+			}
+			catch (PMNoTargetException)
+			{
+				Console.WriteLine("Meteor Shower Aborted: Invalid Target");
+			}
+			catch (Exception ex)
+			{
+				LogManager.APILog.WriteLineAndConsole(ex.ToString());
+			}
+		}
+		private void smitePlayer(string playerName, bool large = false)
+		{
+			//get steamid from playername
+			List<ulong> steamids = ServerNetworkManager.Instance.GetConnectedPlayers();
+			ulong bestmatch = 0;
+			ulong lcmatch = 0;
+			ulong match = 0;
+			string bestname = null;
+			string lcname = null;
+			string matchname = null;
+			foreach (ulong id in steamids)
+			{
+				string name = PlayerMap.Instance.GetPlayerNameFromSteamId(id);
+				if (name == playerName)
+				{
+					match = id;
+					matchname = name;
+				}
+				if (name.ToLower() == playerName.ToLower())
+				{
+					lcmatch = id;
+					lcname = name;
+				}
+				if(name.ToLower().Contains(playerName.ToLower()))
+				{
+					bestmatch = id;
+					bestname = name;
+				}
+			}
+			ulong target = 0;
+			string foundname = null;
+			if (bestmatch > 0)
+			{
+				target = bestmatch;
+				foundname = bestname;
+			}
+			if (lcmatch > 0)
+			{
+				target = lcmatch;
+				foundname = lcname;
+			}
+
+			if (match > 0)
+			{
+				target = match;
+				foundname = matchname;
+			}
+			//have target, hopefully
+			if (target == 0) throw new PMNoTargetException("Target not found.");
+
+			long entityid = PlayerMap.Instance.GetPlayerEntityId(target);
+			List<CharacterEntity> characters = SectorObjectManager.Instance.GetTypedInternalData<CharacterEntity>();
+			CharacterEntity targetchar;
+			try
+			{
+				targetchar = characters.Find(x => x.EntityId == entityid);
+			}
+			catch (ArgumentNullException)
+			{
+				targetchar = null;
+			}
+			
+			if( targetchar != null)
+			{
+					Vector3Wrapper velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
+					Vector3Wrapper pos = targetchar.Position;
+					Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), 200));//were smiting, fire close!
+					Vector3Wrapper intercept = FindInterceptVector(stormpos, 202.0F, pos, targetchar.LinearVelocity);
+					spawnMeteor(stormpos, intercept, large);
+					return;
+			}
+			else
+			{
+				//hunt for pilots!
+				try
+				{
+					CockpitEntity targetcockpit = null;
+					List<CubeGridEntity> grids = SectorObjectManager.Instance.GetTypedInternalData<CubeGridEntity>();
+					debugWrite(entityid.ToString());
+					bool loop = true;
+					foreach (CubeGridEntity grid in grids)
+					{
+						List<CubeBlockEntity> cubeblocks = grid.CubeBlocks;
+						foreach (CubeBlockEntity cube in cubeblocks)
+						{
+							if(cube is CockpitEntity)
+							{
+								targetcockpit = (CockpitEntity)cube;
+								if (targetcockpit.Pilot == null) continue;
+								debugWrite(targetcockpit.Pilot.EntityId.ToString());
+								debugWrite(targetcockpit.Pilot.DisplayName);
+								if (targetcockpit.Pilot.DisplayName == foundname)
+								{
+									loop = false;
+									break;
+								}
+								else
+									targetcockpit = null;
+								
+							}
+						}
+						if (!loop) break;
+					}
+
+					if (targetcockpit != null)
+					{
+						Vector3Wrapper velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
+						Vector3Wrapper pos = targetcockpit.Parent.Position;
+						Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), 200));//were smiting, fire close!
+						Vector3Wrapper intercept = FindInterceptVector(stormpos, 202.0F, pos, targetcockpit.Parent.LinearVelocity);
+						spawnMeteor(stormpos, intercept, large);
+						return;
+					}
+				}
+				catch (Exception ex)
+				{
+					LogManager.APILog.WriteLineAndConsole(ex + " " + ex.ToString() + " " + ex.StackTrace.ToString());
+					throw ex;
+				}
+			}
+			throw new PMNoTargetException("Could not find player.");
+		}
 		private void createMeteorStorm()
 		{
 			try
 			{
 				int ranmeteor = m_gen.Next(max_meteoramt - min_meteoramt) + min_meteoramt;
+				
 				if (ranmeteor == 0) return;
+				int largemeteor = m_gen.Next(ranmeteor);
 				float vel = 0F;
 				Vector3Wrapper intercept;
 				Vector3Wrapper velvector;
@@ -411,10 +618,11 @@ namespace PhysicsMeteroidsPlugin
 				Vector3Wrapper pos = target.Position;
 				Vector3Wrapper velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
 				Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), spawnDistance));
+				
 				//spawn meteors in a random position around stormpos with the velocity of velnorm
 				for (int i = 0; i < ranmeteor; i++)
 				{
-					Thread.Sleep(100);
+					Thread.Sleep(spacingTimer);
 					spawnPos = Vector3.Add(
 							stormpos,
 							Vector3.Multiply(
@@ -428,7 +636,7 @@ namespace PhysicsMeteroidsPlugin
 					velvector = Vector3.Add(intercept,
 							Vector3.Multiply(Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), spawnAcc)//randomize the vector by a small amount
 							);
-					spawnMeteor(spawnPos, velvector);
+					spawnMeteor(spawnPos, velvector, (i == largemeteor));
 				}
 			}
 			catch (PMNoPlayersException)
@@ -452,13 +660,8 @@ namespace PhysicsMeteroidsPlugin
 		{
 
 			Vector3 dirToTarget = Vector3.Normalize(targetOrigin - spawnOrigin);
-
-
-			Vector3 targetVelOrth =
-			Vector3.Dot(targetVel, dirToTarget) * dirToTarget;
-
+			Vector3 targetVelOrth = Vector3.Dot(targetVel, dirToTarget) * dirToTarget;
 			Vector3 targetVelTang = targetVel - targetVelOrth;
-
 			Vector3 shotVelTang = targetVelTang;
 
 			// Now all we have to find is the orthogonal velocity of the shot
@@ -482,41 +685,16 @@ namespace PhysicsMeteroidsPlugin
 			if (playerList.Count() <= 0)
 				throw new PMNoPlayersException("No players found");
 			int targetno = m_gen.Next(playerList.Count());
+			debugWrite("Selected index: " + targetno.ToString());
 			if (targetno > playerList.Count() || targetno < 0) 
 				throw new PMNoTargetException("Invalid Target");
 			ulong utarget = playerList[targetno];
+			debugWrite("target: " + utarget);
 			return utarget;
 		}
-		private long getOwnerFromSteamId(ulong steamid)
+		private List<long> getOwnerFromSteamId(ulong steamid)
 		{
-			//probably should cache this but w/e we can make this low priority
-			//string huntline = "          <SteamID>" + steamid + " </SteamID>";
-			XmlTextReader reader = new XmlTextReader(Location + "Sandbox.sbc");
-			bool nextplayerid = false;
-			long foundplayerid = 0;
-			while(reader.Read())
-			{
-
-				switch (reader.NodeType) 
-				{
-				 case XmlNodeType.Element:
-						if (reader.Name == "SteamID")
-						{
-							reader.Read();
-							debugWrite("Compare " + steamid + " to xml " + reader.Value.ToString());
-							if(Convert.ToUInt64(reader.Value) == steamid)
-								nextplayerid = true;
-						}
-						if (reader.Name == "PlayerId" && nextplayerid)
-						{
-							reader.Read();
-							foundplayerid = Convert.ToInt64(reader.Value);
-						}
-				   break;
-			   }       
-			}
-
-			return foundplayerid;
+			return PlayerMap.Instance.GetPlayerIdsFromSteamId(steamid);
 		}
 
 		private CubeGridEntity findTarget(bool targetplayer = true)
@@ -529,13 +707,12 @@ namespace PhysicsMeteroidsPlugin
 			List<CubeGridEntity> targets = new List<CubeGridEntity>();
 			int targetno = 0;
 			ulong utarget = 0;
-			long targetowner = 0;
+			List<long> targetowner = new List<long>();
 			//convert utarget to target, target is just an id. not supported in API yet
 			try
 			{
 				utarget = pickPlayer(playerList);
 				targetowner = getOwnerFromSteamId(utarget);
-				debugWrite("Selected player: " + targetowner);
 			}
 			catch (PMNoTargetException)
 			{
@@ -561,17 +738,13 @@ namespace PhysicsMeteroidsPlugin
 					}
 					else
 					{
-						//debugWrite("Checking entity if valid: " + item.EntityId.ToString());
-						
+
 						foreach (var cubeBlock in item.CubeBlocks)
 						{
 							if(cubeBlock.Owner > 0)
 							{
-								
-								//debugWrite("Checking for owner: " + cubeBlock.Owner + "compare to " + targetowner);
-								//debugWrite("SteamId of owner? " + PlayerMap.Instance.GetSteamId(cubeBlock.Owner) + " compare to " + utarget);
-								
-								if (cubeBlock.Owner == targetowner && item.CubeBlocks.Count > 20)
+
+								if (targetowner.Contains(cubeBlock.Owner) && item.CubeBlocks.Count > 20)
 								{
 									debugWrite("Target Found, adding to target list.");
 									targets.Add(item);
@@ -593,7 +766,7 @@ namespace PhysicsMeteroidsPlugin
 			debugWrite("Selected target entityID: " + targets[targetno].EntityId.ToString());
 			return targets[targetno];
 		}
-		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel, Vector3Wrapper up, Vector3Wrapper forward)
+		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel, Vector3Wrapper up, Vector3Wrapper forward, bool large = false)
 		{
 			if (SandboxGameAssemblyWrapper.IsDebugging)
 			{
@@ -609,8 +782,11 @@ namespace PhysicsMeteroidsPlugin
 			tempitem = (MyObjectBuilder_InventoryItem)MyObjectBuilder_InventoryItem.CreateNewObject(m_InventoryItemType);
 			tempitem.PhysicalContent = (MyObjectBuilder_PhysicalObject)MyObjectBuilder_PhysicalObject.CreateNewObject(m_OreType);
 			tempitem.PhysicalContent.SubtypeName = getRandomOre();
-			tempitem.AmountDecimal = Math.Round((decimal)(ore_amt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
-			if (tempitem.AmountDecimal < 1) tempitem.AmountDecimal = 1;
+			if(!large)
+				tempitem.AmountDecimal = Math.Round((decimal)(ore_amt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
+			else
+				tempitem.AmountDecimal = Math.Round((decimal)(large_ore_amt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
+			if (tempitem.AmountDecimal < (decimal)0.01d) tempitem.AmountDecimal = (decimal)0.01d;
 			tempitem.ItemId = 0;
 
 			tempobject = (MyObjectBuilder_FloatingObject)MyObjectBuilder_FloatingObject.CreateNewObject(m_FloatingObjectType);
@@ -632,9 +808,9 @@ namespace PhysicsMeteroidsPlugin
 			physicsthread.Start();	
 
 		}
-		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel)
+		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel, bool large = false)
 		{
-			spawnMeteor(spawnpos, vel, new Vector3Wrapper(0F,1F,0F), new Vector3Wrapper(0F,0F,-1F));
+			spawnMeteor(spawnpos, vel, new Vector3Wrapper(0F,1F,0F), new Vector3Wrapper(0F,0F,-1F), large);
 		}
 		private string getRandomOre()
 		{
@@ -651,7 +827,9 @@ namespace PhysicsMeteroidsPlugin
 				return "Gold";
 			if (m_gen.NextDouble() > 0.5d)
 				return "Uranium";
-			return "Platinum";
+			if (m_gen.NextDouble() > 0.5d)
+				return "Platinum";
+			return "Magnesium";
 		}
 
 		private double getOreFctr(string ore)
@@ -665,8 +843,9 @@ namespace PhysicsMeteroidsPlugin
 				case "Gold": return 0.5d;
 				case "Uranium": return 0.2d;
 				case "Platinum": return 0.1d;
+				case "Magnesium": return 0.05d;
 			}
-			return 1;
+			return 1d;
 		}
 		private void meteorControlLoop()
 		{
@@ -690,9 +869,7 @@ namespace PhysicsMeteroidsPlugin
 			{
 				try
 				{
-					//Thread.BeginCriticalRegion();
 					clearMeteor();
-					//Thread.EndCriticalRegion();
 				}
 				catch (Exception ex)
 				{
@@ -769,6 +946,11 @@ namespace PhysicsMeteroidsPlugin
 							ore_amt = Convert.ToDouble(rem.Trim());
 							ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Ore amount set to " + ore_amt.ToString());
 						}
+						if (words[1] == "pm-largeore")
+						{
+							large_ore_amt = Convert.ToDouble(rem.Trim());
+							ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Ore amount set to " + large_ore_amt.ToString());
+						}
 						if (words[1] == "pm-interval")
 						{
 							interval = Convert.ToInt32(rem.Trim());
@@ -779,6 +961,50 @@ namespace PhysicsMeteroidsPlugin
 							randinterval = Convert.ToInt32(rem.Trim());
 							ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Meteroid storm random interval set to " + randinterval.ToString());
 						}
+					}
+				}
+				if (isadmin && words[0] == "/pm-smite")
+				{
+					try
+					{
+						if (words.Count() > 2)
+						{
+							rem = String.Join(" ", words, 2, words.Count() - 2);
+							if (words[1] == "small")
+							{
+								smitePlayer(rem, false);
+								ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Dropping small rock on: " + rem);
+							}
+							if (words[1] == "large")
+							{
+								smitePlayer(rem, true);
+								ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Dropping large rock on: " + rem);
+							}
+						}
+						if (words.Count() > 1)
+						{
+							rem = String.Join(" ", words, 1, words.Count() - 1);
+							smitePlayer(rem, false);
+							ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Dropping small rock on: " + rem);
+						}
+					}
+					catch (PMNoTargetException ex)
+					{
+						//ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Could not target player: " + ex.Message.ToString());
+						debugWrite(ex.ToString());
+					}
+
+				}
+				if (isadmin && words[0] == "/pm-spawnpos")
+				{
+					if(words.Count()>3)
+					{
+						int x = Convert.ToInt32(words[1]);
+						int y = Convert.ToInt32(words[2]);
+						int z = Convert.ToInt32(words[3]);
+						Thread t = new Thread(() => showerPosition(new Vector3Wrapper(x,y,z)));
+						t.Start();
+						ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Starting meteoriod storm at " + x.ToString() + " " + y.ToString() + " " + z.ToString());
 					}
 				}
 				if (isadmin && words[0] == "/pm-spawnwave")
