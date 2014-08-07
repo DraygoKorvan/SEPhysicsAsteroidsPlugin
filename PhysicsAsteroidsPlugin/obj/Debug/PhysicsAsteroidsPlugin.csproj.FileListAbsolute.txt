@@ -23,3 +23,13 @@ D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\obj\Debug\PhysicsMeteroidsPlugin.dll
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\obj\Debug\PhysicsMeteroidsPlugin.pdb
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\VRage.Library.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SteamSDK.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\HavokWrapper.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\Sandbox.Game.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\Sandbox.Input.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\Sandbox.Graphics.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\Sandbox.Audio.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.DirectInput.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.RawInput.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.XAudio2.dll

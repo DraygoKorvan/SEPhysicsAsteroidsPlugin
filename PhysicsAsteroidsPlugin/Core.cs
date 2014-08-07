@@ -53,6 +53,8 @@ namespace PhysicsMeteroidsPlugin
 		private int m_ranInterval = 60;
 		private bool m_meteorOn = true;
 		private int m_spacingTimer = 100;
+		private bool m_sectorStorm = false;
+		private bool m_warn = false;
 
 		public double oreAmt
 		{
@@ -114,6 +116,9 @@ namespace PhysicsMeteroidsPlugin
 			get { return m_spacingTimer; }
 			set { if (value > 10) m_spacingTimer = value; else m_spacingTimer = 10; }
 		}
+
+		public bool sectorStorm { get { return m_sectorStorm; } set { m_sectorStorm = value ;} }
+		public bool warn { get { return m_warn; } set { m_warn = value; } }
 	}
 
 	public class PhysicsMeteroidCore : PluginBase, IChatEventHandler
@@ -162,6 +167,8 @@ namespace PhysicsMeteroidsPlugin
 			settings.spawnAcc = 3.0F;
 			settings.meteorOn = true;
 			settings.spacingTimer = 100;
+			settings.sectorStorm = false;
+			settings.warn = false;
 			Console.WriteLine("PhysicsMeteoroidPlugin '" + Id.ToString() + "' initialized!");
 			loadXML();
 
@@ -350,6 +357,27 @@ namespace PhysicsMeteroidsPlugin
 		{
 			get { return settings.spacingTimer; }
 			set { settings.spacingTimer = value; }
+
+		}
+		[Category("Physics Meteoriod Plugin")]
+		[Description("Sector wide storm, target all online players at once.")]
+		[Browsable(true)]
+		[ReadOnly(false)]
+		public bool sectorStorm
+		{
+			get { return settings.sectorStorm; }
+			set { settings.sectorStorm = value; }
+
+		}
+
+		[Category("Physics Meteoriod Plugin")]
+		[Description("Warn players of impending sector wide storm")]
+		[Browsable(true)]
+		[ReadOnly(false)]
+		public bool sectorWarn
+		{
+			get { return settings.warn; }
+			set { settings.warn = value; }
 
 		}
 		#endregion
@@ -599,6 +627,64 @@ namespace PhysicsMeteroidsPlugin
 			}
 			throw new PMNoTargetException("Could not find player.");
 		}
+		private void createSectorStorm()
+		{
+			try
+			{
+				if(sectorWarn)
+					ChatManager.Instance.SendPublicChatMessage("Warning, meteoroid swarm detected.");
+
+				int ranmeteor = m_gen.Next(max_meteoramt - min_meteoramt) + min_meteoramt;
+				if (ranmeteor == 0) return;
+				int largemeteor = m_gen.Next(ranmeteor);
+				float vel = 0F;
+				Vector3Wrapper intercept;
+				Vector3Wrapper velvector;
+				Vector3Wrapper spawnPos;
+				List<CubeGridEntity> targets = findTargets(true);
+				Vector3Wrapper velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
+				foreach (CubeGridEntity target in targets)
+				{
+
+					Vector3Wrapper pos = target.Position;
+					Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), spawnDistance));
+
+					//spawn meteors in a random position around stormpos with the velocity of velnorm
+					for (int i = 0; i < ranmeteor; i++)
+					{
+						Thread.Sleep(spacingTimer);
+						spawnPos = Vector3.Add(
+								stormpos,
+								Vector3.Multiply(
+									new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1),
+									100) //distance in meters for the spawn sphere
+								);
+						vel = (float)((50d + m_gen.NextDouble() * 55d) * velocityFctr);
+						if (vel > maxVelocityFctr * 104.7F) vel = 104.7F * maxVelocityFctr;
+
+						intercept = FindInterceptVector(spawnPos, vel, target.Position, target.LinearVelocity);
+						velvector = Vector3.Add(intercept,
+								Vector3.Multiply(Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), spawnAcc)//randomize the vector by a small amount
+								);
+						spawnMeteor(spawnPos, velvector, (i == largemeteor));
+					}
+				}
+			}
+			catch (PMNoPlayersException)
+			{
+				//do nothing
+
+				Console.WriteLine("Meteor Shower Aborted: No players on server");
+			}
+			catch (PMNoTargetException)
+			{
+				Console.WriteLine("Meteor Shower Aborted: Invalid Target");
+			}
+			catch (Exception ex)
+			{
+				LogManager.APILog.WriteLineAndConsole(ex.ToString());
+			}
+		}
 		private void createMeteorStorm()
 		{
 			try
@@ -689,11 +775,92 @@ namespace PhysicsMeteroidsPlugin
 			debugWrite("target: " + utarget);
 			return utarget;
 		}
+		private List<long> generateTargetList(List<ulong> playerList)
+		{
+			if (playerList.Count() <= 0) 
+				throw new PMNoPlayersException("No players found");
+			List<long> list = new List<long>();
+
+			foreach (ulong steamid in playerList)
+			{
+				list.AddRange(getOwnerFromSteamId(steamid));
+			}
+			if(list.Count() <= 0 )
+				throw new PMNoTargetException("Invalid Target");
+			return list;
+		}
 		private List<long> getOwnerFromSteamId(ulong steamid)
 		{
 			return PlayerMap.Instance.GetPlayerIdsFromSteamId(steamid);
 		}
+		private List<CubeGridEntity> findTargets(bool targetplayer = true)
+		{
+			//pull online players
+			List<ulong> playerList = ServerNetworkManager.Instance.GetConnectedPlayers();
+			int connectedPlayers = playerList.Count;
+			if (playerList.Count <= 0)
+				throw new PMNoPlayersException("No players on server aborting.");
+			List<CubeGridEntity> targets = new List<CubeGridEntity>();
+			List<CubeGridEntity> finalTargets = new List<CubeGridEntity>();
+			int targetno = 0;
+			foreach ( ulong player in playerList)
+			{
 
+				targets.Clear();
+				List<long> targetowner = new List<long>();
+				//convert utarget to target, target is just an id. not supported in API yet
+				try
+				{
+					targetowner.AddRange(getOwnerFromSteamId(player));
+				}
+				catch (Exception)
+				{
+					throw;//throw any other exception
+				}
+				//set to targetid obtained from utarget
+
+				List<CubeGridEntity> list = SectorObjectManager.Instance.GetTypedInternalData<CubeGridEntity>();
+				foreach (var item in list)
+				{
+					try
+					{
+						if (item.CubeBlocks.Count <= 20) continue;
+						if (!targetplayer)
+						{
+							targets.Add(item);
+						}
+						else
+						{
+
+							foreach (var cubeBlock in item.CubeBlocks)
+							{
+								if (cubeBlock.Owner > 0)
+								{
+
+									if (targetowner.Contains(cubeBlock.Owner))
+									{
+										debugWrite("Target Found, adding to target list.");
+										targets.Add(item);
+										break;
+									}
+								}
+							}
+						}
+					}
+					catch (Exception ex)
+					{
+						LogManager.APILog.WriteLine(ex);
+					}
+				}
+				if (targets.Count == 0) continue;
+				targetno = m_gen.Next(targets.Count());
+				if (targetno > targets.Count()) continue;
+				debugWrite("Selected target entityID: " + targets[targetno].EntityId.ToString());
+				finalTargets.Add(targets[targetno]);
+			}
+
+			return finalTargets;
+		}
 		private CubeGridEntity findTarget(bool targetplayer = true)
 		{
 			//pull online players
@@ -703,13 +870,11 @@ namespace PhysicsMeteroidsPlugin
 				throw new PMNoPlayersException("No players on server aborting.");
 			List<CubeGridEntity> targets = new List<CubeGridEntity>();
 			int targetno = 0;
-			ulong utarget = 0;
 			List<long> targetowner = new List<long>();
 			//convert utarget to target, target is just an id. not supported in API yet
 			try
 			{
-				utarget = pickPlayer(playerList);
-				targetowner = getOwnerFromSteamId(utarget);
+				targetowner = generateTargetList(playerList);
 			}
 			catch (PMNoTargetException)
 			{
@@ -741,7 +906,7 @@ namespace PhysicsMeteroidsPlugin
 							if(cubeBlock.Owner > 0)
 							{
 
-								if (targetowner.Contains(cubeBlock.Owner) && item.CubeBlocks.Count > 20)
+								if (targetowner.Contains(cubeBlock.Owner))
 								{
 									debugWrite("Target Found, adding to target list.");
 									targets.Add(item);
@@ -819,6 +984,10 @@ namespace PhysicsMeteroidsPlugin
 			if (m_gen.NextDouble() > 0.5d)
 				return "Silver";
 			if (m_gen.NextDouble() > 0.5d)
+				return "Cobalt";
+			if (m_gen.NextDouble() > 0.5d)
+				return "Nickel";
+			if (m_gen.NextDouble() > 0.5d)
 				return "Silicon";
 			if (m_gen.NextDouble() > 0.5d)
 				return "Gold";
@@ -826,7 +995,7 @@ namespace PhysicsMeteroidsPlugin
 				return "Uranium";
 			if (m_gen.NextDouble() > 0.5d)
 				return "Platinum";
-			return "Magnesium";
+			return "Magnesium"; 
 		}
 
 		private double getOreFctr(string ore)
@@ -841,6 +1010,8 @@ namespace PhysicsMeteroidsPlugin
 				case "Uranium": return 0.2d;
 				case "Platinum": return 0.1d;
 				case "Magnesium": return 0.05d;
+				case "Nickel": return 1d;
+				case "Cobalt": return 1d;
 			}
 			return 1d;
 		}
@@ -853,8 +1024,11 @@ namespace PhysicsMeteroidsPlugin
 					Thread.Sleep((interval + (int)Math.Floor( (m_gen.NextDouble() * 2 - 1) * randinterval) ) * 1000 );
 				else
 					Thread.Sleep(30*1000);
-				if(meteoron && m_control)
-					createMeteorStorm();
+				if (meteoron && m_control)
+					if (sectorStorm)
+						createSectorStorm();
+					else
+						createMeteorStorm();
 			}
 			return;
 		}
@@ -958,6 +1132,24 @@ namespace PhysicsMeteroidsPlugin
 							randinterval = Convert.ToInt32(rem.Trim());
 							ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Meteroid storm random interval set to " + randinterval.ToString());
 						}
+						if (words[1] == "pm-type")
+						{
+							if (words[2] == "sector")
+							{
+								ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Meteoroid storms set to sector wide");
+								sectorStorm = true;
+								return;
+							}
+
+							if (words[2] == "individual")
+							{
+								ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Meteoroid storms set to individual");
+								sectorStorm = false;
+								return;
+							}
+
+							ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Invalid parameter, please specify individual or sector /set pm-type [individual|sector]");
+						}
 					}
 				}
 				if (isadmin && words[0] == "/pm-smite")
@@ -1011,6 +1203,13 @@ namespace PhysicsMeteroidsPlugin
 					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Starting meteoriod storm");
 					return;
 				}
+				if (isadmin && words[0] == "/pm-sectorwave")
+				{
+					Thread t = new Thread(createSectorStorm);
+					t.Start();
+					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Starting meteoriod sector wide storm");
+					return;
+				}
 				if (isadmin && words[0] == "/pm-enable")
 				{
 					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Automatic Meteoroid storms enabled");
@@ -1022,6 +1221,20 @@ namespace PhysicsMeteroidsPlugin
 				{
 					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Automatic Meteoroid storms disabled");
 					settings.meteorOn = false;
+					return;
+				}
+
+				if (isadmin && words[0] == "/pm-enablewarning")
+				{
+					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Sector Meteroid Warning Enabled");
+					sectorWarn = true;
+					return;
+				}
+
+				if (isadmin && words[0] == "/pm-disablewarning")
+				{
+					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Sector Meteroid Warning Disabled");
+					sectorWarn = false;
 					return;
 				}
 
