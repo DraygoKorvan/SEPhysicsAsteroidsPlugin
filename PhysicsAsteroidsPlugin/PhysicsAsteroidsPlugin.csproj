@@ -42,6 +42,8 @@
     <Compile Include="Exceptions\PMNoPlayersException.cs" />
     <Compile Include="Core.cs" />
     <Compile Include="Exceptions\PMNoTargetException.cs" />
+    <Compile Include="PhysicsMeteroidEvents.cs" />
+    <Compile Include="PhysicsMeteroidSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -61,6 +63,7 @@
       <HintPath>..\Libraries\SEModAPIInternal.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.XML" />
     <Reference Include="VRage.Common">
       <HintPath>..\Libraries\VRage.Common.dll</HintPath>
