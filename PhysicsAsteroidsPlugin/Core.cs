@@ -17,6 +17,7 @@ using SEModAPIExtensions.API.Plugin;
 using SEModAPIExtensions.API.Plugin.Events;
 using SEModAPIExtensions.API;
 
+
 using SEModAPIInternal.API.Common;
 using SEModAPIInternal.API.Entity;
 using SEModAPIInternal.API.Entity.Sector.SectorObject;
@@ -29,7 +30,7 @@ using SEModAPI.API;
 
 using VRageMath;
 using VRage.Common.Utils;
-
+using VRage;
 
 
 
@@ -78,6 +79,26 @@ namespace PhysicsMeteroidsPlugin
 			m_running = true;
 			if (events.Count == 0) 
 				events.Add(new PhysicsMeteroidEvents());
+
+			//Register Chat Commands
+			ChatManager.ChatCommand command = new ChatManager.ChatCommand();
+			command.callback = saveXML;
+			command.command = "pm-save";
+			command.requiresAdmin = true;
+			ChatManager.Instance.RegisterChatCommand(command);
+
+			command = new ChatManager.ChatCommand();
+			command.callback = loadXML;
+			command.command = "pm-load";
+			command.requiresAdmin = true;
+			ChatManager.Instance.RegisterChatCommand(command);
+
+			command = new ChatManager.ChatCommand();
+			command.callback = loadDefaults;
+			command.command = "pm-loaddefaults";
+			command.requiresAdmin = true;
+			ChatManager.Instance.RegisterChatCommand(command);
+			//End Register Chat commands
 
 			meteorcheck = new Thread(meteorScanLoop);
 			meteorcheck.Start();
@@ -172,6 +193,7 @@ namespace PhysicsMeteroidsPlugin
 			if (SandboxGameAssemblyWrapper.IsDebugging)
 				LogManager.APILog.WriteLineAndConsole(message);
 		}
+
 		public void saveXML()
 		{
 
@@ -181,7 +203,7 @@ namespace PhysicsMeteroidsPlugin
 			writer.Close();
 
 		}
-		public void loadXML(bool l_default)
+		public void loadXML(bool l_default = false)
 		{
 			try
 			{
@@ -216,10 +238,6 @@ namespace PhysicsMeteroidsPlugin
 				LogManager.APILog.WriteLineAndConsole("Could not load configuration: " + ex.ToString());
 			}
 
-		}
-		public void loadXML()
-		{
-			loadXML(false);
 		}
 		public void velocityloop(FloatingObject obj, Vector3Wrapper vel, PhysicsMeteroidEvents _event)
 		{
@@ -740,11 +758,12 @@ namespace PhysicsMeteroidsPlugin
 			tempitem = (MyObjectBuilder_InventoryItem)MyObjectBuilder_InventoryItem.CreateNewObject(m_InventoryItemType);
 			tempitem.PhysicalContent = (MyObjectBuilder_PhysicalObject)MyObjectBuilder_PhysicalObject.CreateNewObject(m_OreType);
 			tempitem.PhysicalContent.SubtypeName = getRandomOre();
+			
 			if(!large)
-				tempitem.AmountDecimal = Math.Round((decimal)(_event.oreAmt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
+				tempitem.Amount = (MyFixedPoint)Math.Round((decimal)(_event.oreAmt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
 			else
-				tempitem.AmountDecimal = Math.Round((decimal)(_event.largeOreAmt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
-			if (tempitem.AmountDecimal < (decimal)0.01d) tempitem.AmountDecimal = (decimal)0.01d;
+				tempitem.Amount = (MyFixedPoint)Math.Round((decimal)(_event.largeOreAmt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
+			if (tempitem.Amount < (MyFixedPoint)0.01) tempitem.Amount = (MyFixedPoint)0.01;
 			tempitem.ItemId = 0;
 
 			tempobject = (MyObjectBuilder_FloatingObject)MyObjectBuilder_FloatingObject.CreateNewObject(m_FloatingObjectType);
@@ -936,7 +955,7 @@ namespace PhysicsMeteroidsPlugin
 
 			if (obj.message[0] == '/')
 			{
-				bool isadmin = SandboxGameAssemblyWrapper.Instance.IsUserAdmin(obj.sourceUserId);
+				bool isadmin =  PlayerManager.Instance.IsUserAdmin(obj.sourceUserId);
 				string[] words = obj.message.Split(' ');
 				string rem = "";
 				//proccess
@@ -1071,26 +1090,6 @@ namespace PhysicsMeteroidsPlugin
 					events.First().warn = false;
 					return;
 				}
-
-				if (isadmin && words[0] == "/pm-save")
-				{
-					
-					saveXML();
-					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Physics Meteoroid Configuration Saved.");
-					return;
-				}
-				if (isadmin && words[0] == "/pm-load")
-				{
-					loadXML(false);
-					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Physics Meteoroid Configuration Loaded.");
-					return;
-				}
-				if (isadmin && words[0] == "/pm-loaddefault")
-				{
-					loadXML(true);
-					ChatManager.Instance.SendPrivateChatMessage(obj.sourceUserId, "Physics Meteoroid Configuration Defaults Loaded.");
-					return;
-				}
 			}
 			return;
 		}
@@ -1099,6 +1098,21 @@ namespace PhysicsMeteroidsPlugin
 			//do nothing
 			return;
 		}
+
+		#region chatCommands
+		public void saveXML(ChatManager.ChatEvent _event)
+		{
+			saveXML();
+		}
+		public void loadXML(ChatManager.ChatEvent _event)
+		{
+			loadXML(false);
+		}
+		public void loadDefaults(ChatManager.ChatEvent _event)
+		{
+			loadXML(true);
+		}
+		#endregion
 		#endregion
 
 

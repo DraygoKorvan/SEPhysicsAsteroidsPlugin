@@ -68,6 +68,9 @@
     <Reference Include="VRage.Common">
       <HintPath>..\Libraries\VRage.Common.dll</HintPath>
     </Reference>
+    <Reference Include="VRage.Library">
+      <HintPath>..\Libraries\VRage.Library.dll</HintPath>
+    </Reference>
     <Reference Include="VRage.Math">
       <HintPath>..\Libraries\VRage.Math.dll</HintPath>
     </Reference>
