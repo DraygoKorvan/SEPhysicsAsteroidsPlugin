@@ -38,6 +38,7 @@ namespace PhysicsMeteroidsPlugin
 		private string m_name = "";
 		private bool m_warn = false;
 		private bool m_enabled = false;
+		private bool m_keenMeteroid = false;
 		private string m_warningMessage;
 		private string m_eventType = "Sector";
 		private Vector3Wrapper m_location = new Vector3Wrapper(0, 0, 0);
@@ -61,7 +62,12 @@ namespace PhysicsMeteroidsPlugin
 			get { return m_warn; }
 			set { m_warn = value; }
 		}
-
+		[Browsable(true)]
+		public bool keenMeteoroid
+		{
+			get { return m_keenMeteroid; }
+			set { m_keenMeteroid = value; }
+		}
 		[Browsable(true)]
 		public string warningMessage
 		{
