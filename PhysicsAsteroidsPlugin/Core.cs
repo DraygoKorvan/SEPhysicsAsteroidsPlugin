@@ -833,7 +833,7 @@ namespace PhysicsMeteroidsPlugin
 				MyObjectBuilder_Meteor tempobject;
 				MyObjectBuilder_Ore tempore = new MyObjectBuilder_Ore();
 				MyObjectBuilder_InventoryItem tempitem = new MyObjectBuilder_InventoryItem();
-				tempore.SetDefaultProperties();
+				//tempore.SetDefaultProperties();
 				Meteor physicsmeteor;
 				m_ore_fctr = m_gen.NextDouble();
 
@@ -871,7 +871,7 @@ namespace PhysicsMeteroidsPlugin
 				MyObjectBuilder_FloatingObject tempobject;
 				MyObjectBuilder_Ore tempore = new MyObjectBuilder_Ore();
 				MyObjectBuilder_InventoryItem tempitem = new MyObjectBuilder_InventoryItem();
-				tempore.SetDefaultProperties();
+				//tempore.SetDefaultProperties();
 				FloatingObject physicsmeteor;
 				m_ore_fctr = m_gen.NextDouble();
 
@@ -971,7 +971,7 @@ namespace PhysicsMeteroidsPlugin
 						{
 							_event.lastrun = DateTime.UtcNow;
 							_event.nextrun = DateTime.UtcNow + TimeSpan.FromSeconds(_event.interval + (m_gen.NextDouble() * _event.randInterval * 2) - _event.randInterval);
-							if (_event.enabled)
+							if (_event.enabled && meteoron)
 							{
 								switch (_event.eventType)
 								{
