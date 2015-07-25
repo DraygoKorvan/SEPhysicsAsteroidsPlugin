@@ -41,7 +41,7 @@ namespace PhysicsMeteroidsPlugin
 		private bool m_keenMeteroid = false;
 		private string m_warningMessage;
 		private string m_eventType = "Sector";
-		private Vector3Wrapper m_location = new Vector3Wrapper(0, 0, 0);
+		private Vector3D m_location = new Vector3D(0, 0, 0);
 		private int m_interval = 300;
 		private int m_randInterval = 60;
 		private int m_minMeteroidAmt = 1;
@@ -96,7 +96,7 @@ namespace PhysicsMeteroidsPlugin
 					case "Location":
 						if (m_eventType != value)
 						{
-							m_location = new Vector3Wrapper(0, 0, 0);
+							m_location = new Vector3D(0, 0, 0);
 							m_eventType = "Location";
 						}
 						break;
@@ -208,8 +208,8 @@ namespace PhysicsMeteroidsPlugin
 			set { if (value > 10) m_spacingTimer = value; else m_spacingTimer = 10; }
 		}
 		[Browsable(true)]
-		[TypeConverter(typeof(Vector3TypeConverter))]
-		public Vector3Wrapper location
+		[TypeConverter(typeof(Vector3D))]
+		public Vector3D location
 		{
 			get { return m_location; }
 			set { m_location = value; }

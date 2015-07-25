@@ -24,13 +24,24 @@ using SEModAPIInternal.API.Entity.Sector.SectorObject;
 using SEModAPIInternal.API.Entity.Sector.SectorObject.CubeGrid;
 using SEModAPIInternal.API.Entity.Sector.SectorObject.CubeGrid.CubeBlock;
 using SEModAPIInternal.API.Server;
+using SEModAPI.API.TypeConverters;
 using SEModAPIInternal.Support;
 
 using SEModAPI.API;
+using SEModAPIInternal.API;
+using SEModAPI;
 
 using VRageMath;
 using VRage.Common.Utils;
 using VRage;
+using VRage.ModAPI;
+using VRage.ObjectBuilders;
+using VRage.Game;
+using Sandbox.Common.ObjectBuilders;
+using VRage.FileSystem;
+using NLog;
+
+using Sandbox.Game.Entities;
 
 
 
@@ -39,7 +50,7 @@ namespace PhysicsMeteroidsPlugin
 {
 	public class PhysicsMeteroidCore : PluginBase
 	{
-		
+		public static Logger Log;
 		#region "Attributes"
 
 		PhysicsMeteroidSettings settings;
@@ -52,10 +63,10 @@ namespace PhysicsMeteroidsPlugin
 		private Thread meteorcheck;
 		private Thread controlloop;
 
-		private static Type m_InventoryItemType = new MyObjectBuilderType(typeof(MyObjectBuilder_InventoryItem));
-		private static Type m_OreType = new MyObjectBuilderType(typeof(MyObjectBuilder_Ore));
-		private static Type m_FloatingObjectType = new MyObjectBuilderType(typeof(MyObjectBuilder_FloatingObject));
-		private static Type m_MeteorObjectType = new MyObjectBuilderType(typeof(MyObjectBuilder_Meteor));
+		//private static Type m_InventoryItemType = new MyObjectBuilderType(typeof(MyObjectBuilder_InventoryItem));
+		//private static Type m_OreType = new MyObjectBuilderType(typeof(MyObjectBuilder_Ore));
+		//private static Type m_FloatingObjectType = new MyObjectBuilderType(typeof(MyObjectBuilder_FloatingObject));
+		//private static Type m_MeteorObjectType = new MyObjectBuilderType(typeof(MyObjectBuilder_Meteor));
 
 		private Random m_gen;
 
@@ -86,7 +97,7 @@ namespace PhysicsMeteroidsPlugin
 				events.Add(new PhysicsMeteroidEvents());
 
 			//Register Chat Commands
-			ChatManager.ChatCommand command = new ChatManager.ChatCommand();
+			/*ChatManager.ChatCommand command = new ChatManager.ChatCommand();
 			command.callback = CommandSaveXML;
 			command.command = "pm-save";
 			command.requiresAdmin = true;
@@ -140,7 +151,7 @@ namespace PhysicsMeteroidsPlugin
 			command.requiresAdmin = true;
 			ChatManager.Instance.RegisterChatCommand(command);
 			//End Register Chat commands
-
+			*/
 			meteorcheck = new Thread(meteorScanLoop);
 			meteorcheck.Start();
 
@@ -164,7 +175,7 @@ namespace PhysicsMeteroidsPlugin
 		[ReadOnly(true)]
 		public string Location
 		{
-			get { return SandboxGameAssemblyWrapper.Instance.GetServerConfig().LoadWorld + "\\"; }
+			get { return VRage.FileSystem.MyFileSystem.SavesPath + "\\"; }
 
 		}
 
@@ -234,7 +245,7 @@ namespace PhysicsMeteroidsPlugin
 		[ReadOnly(true)]
 		public bool isdebugging
 		{
-			get { return m_debug || SandboxGameAssemblyWrapper.IsDebugging; }
+			get { return m_debug /*|| SandboxGameAssemblyWrapper.IsDebugging*/; }
 		}
 
 		[Category("Utils")]
@@ -252,7 +263,8 @@ namespace PhysicsMeteroidsPlugin
 		private void debugWrite(string message)
 		{
 			if (isdebugging)
-				LogManager.APILog.WriteLineAndConsole(message);
+				Log.Debug(message);
+
 		}
 
 		public void saveXML()
@@ -281,7 +293,7 @@ namespace PhysicsMeteroidsPlugin
 			}
 			catch (Exception ex)
 			{
-				LogManager.APILog.WriteLineAndConsole("Could not load configuration: " + ex.ToString());
+				Log.Info("Could not load configuration: " + ex.ToString());
 			}
 			try
 			{
@@ -296,24 +308,25 @@ namespace PhysicsMeteroidsPlugin
 			}
 			catch (Exception ex)
 			{
-				LogManager.APILog.WriteLineAndConsole("Could not load configuration: " + ex.ToString());
+				Log.Warn("Could not load configuration: " + ex.ToString());
 			}
 
 		}
-		public void velocityloop(BaseEntity obj, Vector3Wrapper vel, PhysicsMeteroidEvents _event)
+		public void velocityloop(IMyEntity obj, Vector3D vel, PhysicsMeteroidEvents _event)
 		{
 			Thread.Sleep(20);
 			for (int count = 20; count > 0; count--)
 			{
-				if (obj.Mass > 0)
-				{
-					obj.MaxLinearVelocity = 104.7F * _event.maxVelocityFctr;
-					obj.LinearVelocity = vel;
-
+				
+				//if (obj.Mass > 0)
+				//{
+					//obj.Physics.MaxLinearVelocity = 104.7F * _event.maxVelocityFctr;
+					obj.Physics.LinearVelocity = vel;
+					
 					debugWrite("Meteor entityID: " + obj.EntityId.ToString() + " Velocity: " + vel.ToString());
 					
 					break;
-				}
+				//}
 				Thread.Sleep(20);
 			}
 			
@@ -323,7 +336,7 @@ namespace PhysicsMeteroidsPlugin
 		{
 			showerPosition(_event.location);
 		}
-		private void showerPosition(Vector3Wrapper pos, PhysicsMeteroidEvents _event = null)
+		private void showerPosition(Vector3D pos, PhysicsMeteroidEvents _event = null)
 		{
 			if (events.First() == null)
 				events.Add(new PhysicsMeteroidEvents());
@@ -337,11 +350,11 @@ namespace PhysicsMeteroidsPlugin
 				if (ranmeteor == 0) return;
 				int largemeteor = m_gen.Next(ranmeteor);
 				float vel = 0F;
-				Vector3Wrapper intercept;
-				Vector3Wrapper velvector;
-				Vector3Wrapper spawnPos;
-				Vector3Wrapper velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
-				Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), _event.spawnDistance));
+				Vector3D intercept;
+				Vector3D velvector;
+				Vector3D spawnPos;
+				Vector3D velnorm = Vector3D.Normalize(new Vector3D(m_gen.NextDouble() * 2 - 1, m_gen.NextDouble() * 2 - 1, m_gen.NextDouble() * 2 - 1));
+				Vector3D stormpos = Vector3D.Add(pos, Vector3D.Multiply(Vector3D.Negate(velnorm), _event.spawnDistance));
 
 				//spawn meteors in a random position around stormpos with the velocity of velnorm
 				for (int i = 0; i < ranmeteor; i++)
@@ -350,15 +363,15 @@ namespace PhysicsMeteroidsPlugin
 					spawnPos = Vector3.Add(
 							stormpos,
 							Vector3.Multiply(
-								new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1),
+								new Vector3D(m_gen.NextDouble() * 2 - 1, m_gen.NextDouble() * 2 - 1, m_gen.NextDouble() * 2 - 1),
 								100) //distance in meters for the spawn sphere
 							);
 					vel = (float)((50d + m_gen.NextDouble() * 55d) * _event.velocityFctr);
 					if (vel > _event.maxVelocityFctr * 104.7F) vel = 104.7F * _event.maxVelocityFctr;
 
-					intercept = FindInterceptVector(spawnPos, vel, pos, new Vector3Wrapper(0,0,0));
-					velvector = Vector3.Add(intercept,
-							Vector3.Multiply(Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), _event.spawnAcc)//randomize the vector by a small amount
+					intercept = FindInterceptVector(spawnPos, vel, pos, new Vector3D(0,0,0));
+					velvector = Vector3D.Add(intercept,
+							Vector3D.Multiply(Vector3D.Normalize(new Vector3D(m_gen.NextDouble() * 2 - 1, m_gen.NextDouble() * 2 - 1, m_gen.NextDouble() * 2 - 1)), _event.spawnAcc)//randomize the vector by a small amount
 							);
 					spawnMeteor(spawnPos, velvector, _event, (i == largemeteor));
 				}
@@ -375,7 +388,7 @@ namespace PhysicsMeteroidsPlugin
 			}
 			catch (Exception ex)
 			{
-				LogManager.APILog.WriteLineAndConsole(ex.ToString());
+				Log.Warn(ex.ToString());
 			}
 		}
 		private void smitePlayer(string playerName, bool large = false)
@@ -444,10 +457,10 @@ namespace PhysicsMeteroidsPlugin
 			
 			if( targetchar != null)
 			{
-					Vector3Wrapper velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
-					Vector3Wrapper pos = targetchar.Position;
-					Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), 200));//were smiting, fire close!
-					Vector3Wrapper intercept = FindInterceptVector(stormpos, 202.0F, pos, targetchar.LinearVelocity);
+					Vector3D velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
+					Vector3D pos = targetchar.Position;
+					Vector3D stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), 200));//were smiting, fire close!
+					Vector3D intercept = FindInterceptVector(stormpos, 202.0F, pos, (Vector3)targetchar.LinearVelocity);
 				    PhysicsMeteroidEvents _event = new PhysicsMeteroidEvents();
 					_event.oreAmt = 60000;
 					_event.largeOreAmt = 600000;
@@ -492,17 +505,17 @@ namespace PhysicsMeteroidsPlugin
 						Matrix matrix = targetcockpit.Parent.PositionAndOrientation.GetMatrix();
 						Matrix orientation = matrix.GetOrientation();
 						Vector3 rotatedBlockPos = Vector3.Transform((Vector3)blockGridPos * (targetcockpit.Parent.GridSizeEnum == MyCubeSize.Large ? 2.5f : 0.5f), orientation);
-						Vector3Wrapper pos = rotatedBlockPos + targetcockpit.Parent.Position;
+						Vector3D pos = rotatedBlockPos + (Vector3D)targetcockpit.Parent.Position;
 
-						Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), 200));//were smiting, fire close!
-						Vector3Wrapper intercept = FindInterceptVector(stormpos, 202.0F, pos, targetcockpit.Parent.LinearVelocity);
+						Vector3D stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), 200));//were smiting, fire close!
+						Vector3D intercept = FindInterceptVector(stormpos, 202.0F, pos, (Vector3)targetcockpit.Parent.LinearVelocity);
 						spawnMeteor(stormpos, intercept, events.First(), large);
 						return;
 					}
 				}
 				catch (Exception ex)
 				{
-					LogManager.APILog.WriteLineAndConsole(ex + " " + ex.ToString() + " " + ex.StackTrace.ToString());
+					Log.Warn(ex + " " + ex.ToString() + " " + ex.StackTrace.ToString());
 					throw ex;
 				}
 			}
@@ -513,27 +526,27 @@ namespace PhysicsMeteroidsPlugin
 			try
 			{
 				float vel = 0F;
-				Vector3Wrapper intercept;
-				Vector3Wrapper velvector;
-				Vector3Wrapper spawnPos;
+				Vector3D intercept;
+				Vector3D velvector;
+				Vector3D spawnPos;
 				List<CubeGridEntity> targets = findTargets(true);
-				Vector3Wrapper velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
+				Vector3D velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
 				foreach (CubeGridEntity target in targets)
 				{
 					int ranmeteor = m_gen.Next(_event.maxMeteoroidAmt - _event.minMeteroidAmt) + _event.minMeteroidAmt;
 					if (ranmeteor == 0) continue;
 					int largemeteor = m_gen.Next(ranmeteor);
-					Vector3Wrapper pos = target.Position;
+					Vector3DWrapper pos = target.Position;
 
 					CubeBlockEntity m_targetBlock = target.CubeBlocks.ElementAt(m_gen.Next(target.CubeBlocks.Count));
 
 					Vector3I blockGridPos = m_targetBlock.Position;
 					Matrix matrix = m_targetBlock.Parent.PositionAndOrientation.GetMatrix();
 					Matrix orientation = matrix.GetOrientation();
-					Vector3 rotatedBlockPos = Vector3.Transform((Vector3)blockGridPos * (target.GridSizeEnum == MyCubeSize.Large ? 2.5f : 0.5f), orientation);
+					Vector3D rotatedBlockPos = Vector3.Transform((Vector3)blockGridPos * (target.GridSizeEnum == MyCubeSize.Large ? 2.5f : 0.5f), orientation);
 					pos = rotatedBlockPos + pos;
 
-					Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), _event.spawnDistance));
+					Vector3D stormpos = Vector3D.Add(pos, Vector3D.Multiply(Vector3D.Negate(velnorm), _event.spawnDistance));
 
 					//spawn meteors in a random position around stormpos with the velocity of velnorm
 					for (int i = 0; i < ranmeteor; i++)
@@ -548,9 +561,9 @@ namespace PhysicsMeteroidsPlugin
 						vel = (float)((50d + m_gen.NextDouble() * 55d) * _event.velocityFctr);
 						if (vel > _event.maxVelocityFctr * 104.7F) vel = 104.7F * _event.maxVelocityFctr;
 
-						intercept = FindInterceptVector(spawnPos, vel, target.Position, target.LinearVelocity);
+						intercept = FindInterceptVector(spawnPos, vel, target.Position, (Vector3)target.LinearVelocity);
 						velvector = Vector3.Add(intercept,
-								Vector3.Multiply(Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), _event.spawnAcc)//randomize the vector by a small amount
+								Vector3.Multiply(Vector3.Normalize(new Vector3D((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), _event.spawnAcc)//randomize the vector by a small amount
 								);
 						spawnMeteor(spawnPos, velvector, _event, (i == largemeteor));
 					}
@@ -560,15 +573,15 @@ namespace PhysicsMeteroidsPlugin
 			{
 				//do nothing
 
-				Console.WriteLine("Meteor Shower Aborted: No players on server");
+				Log.Info("Meteor Shower Aborted: No players on server");
 			}
 			catch (PMNoTargetException)
 			{
-				Console.WriteLine("Meteor Shower Aborted: Invalid Target");
+				Log.Info("Meteor Shower Aborted: Invalid Target");
 			}
 			catch (Exception ex)
 			{
-				LogManager.APILog.WriteLineAndConsole(ex.ToString());
+				Log.Warn(ex.ToString());
 			}
 		}
 		private void createMeteorStorm(PhysicsMeteroidEvents _event)
@@ -580,11 +593,11 @@ namespace PhysicsMeteroidsPlugin
 				if (ranmeteor == 0) return;
 				int largemeteor = m_gen.Next(ranmeteor);
 				float vel = 0F;
-				Vector3Wrapper intercept;
-				Vector3Wrapper velvector;
-				Vector3Wrapper spawnPos;
+				Vector3D intercept;
+				Vector3D velvector;
+				Vector3D spawnPos;
 				CubeGridEntity target = findTarget(true);
-				Vector3Wrapper pos = target.Position;
+				Vector3D pos = target.Position;
 				//target a random block
 				CubeBlockEntity m_targetBlock = target.CubeBlocks.ElementAt(m_gen.Next(target.CubeBlocks.Count));
 							
@@ -594,22 +607,22 @@ namespace PhysicsMeteroidsPlugin
 				Vector3 rotatedBlockPos = Vector3.Transform((Vector3)blockGridPos * (target.GridSizeEnum == MyCubeSize.Large ? 2.5f : 0.5f), orientation);
 				pos = rotatedBlockPos + pos;
 
-				Vector3Wrapper velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
-				Vector3Wrapper stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), _event.spawnDistance));
+				Vector3D velnorm = Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1));
+				Vector3D stormpos = Vector3.Add(pos, Vector3.Multiply(Vector3.Negate(velnorm), _event.spawnDistance));
 				
 				//spawn meteors in a random position around stormpos with the velocity of velnorm
 				for (int i = 0; i < ranmeteor; i++)
 				{
 					Thread.Sleep(_event.spacingTimer);
-					spawnPos = Vector3.Add(
+					spawnPos = Vector3D.Add(
 							stormpos,
-							Vector3.Multiply(
-								new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1),
+							Vector3D.Multiply(
+								new Vector3D((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1),
 								100) //distance in meters for the spawn sphere
 							);
 					vel = (float)((50d + m_gen.NextDouble() * 55d) * _event.velocityFctr);
 					if (vel > _event.maxVelocityFctr * 104.7F) vel = 104.7F * _event.maxVelocityFctr;
-					intercept = FindInterceptVector(spawnPos, vel, target.Position, target.LinearVelocity);
+					intercept = FindInterceptVector(spawnPos, vel, target.Position, (Vector3)target.LinearVelocity);
 					velvector = Vector3.Add(intercept,
 							Vector3.Multiply(Vector3.Normalize(new Vector3Wrapper((float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1, (float)m_gen.NextDouble() * 2 - 1)), _event.spawnAcc)//randomize the vector by a small amount
 							);
@@ -620,38 +633,38 @@ namespace PhysicsMeteroidsPlugin
 			{
 				//do nothing
 				
-				Console.WriteLine("Meteor Shower Aborted: No players on server");
+				Log.Info("Meteor Shower Aborted: No players on server");
 			}
 			catch (PMNoTargetException)
 			{
-				Console.WriteLine("Meteor Shower Aborted: Invalid Target");
+				Log.Info("Meteor Shower Aborted: Invalid Target");
 			}
 			catch (Exception ex)
 			{
-				LogManager.APILog.WriteLineAndConsole(ex.ToString());
+				Log.Warn(ex.ToString());
 			}
 		}
 
 		//Ref Danik from DanikGames http://danikgames.com/blog/?p=809
-		private Vector3 FindInterceptVector(Vector3 spawnOrigin, float meteoroidSpeed, Vector3 targetOrigin, Vector3 targetVel)
+		private Vector3D FindInterceptVector(Vector3D spawnOrigin, double meteoroidSpeed, Vector3D targetOrigin, Vector3D targetVel)
 		{
 
-			Vector3 dirToTarget = Vector3.Normalize(targetOrigin - spawnOrigin);
-			Vector3 targetVelOrth = Vector3.Dot(targetVel, dirToTarget) * dirToTarget;
-			Vector3 targetVelTang = targetVel - targetVelOrth;
-			Vector3 shotVelTang = targetVelTang;
+			Vector3D dirToTarget = Vector3D.Normalize(targetOrigin - spawnOrigin);
+			Vector3D targetVelOrth = Vector3D.Dot(targetVel, dirToTarget) * dirToTarget;
+			Vector3D targetVelTang = targetVel - targetVelOrth;
+			Vector3D shotVelTang = targetVelTang;
 
 			// Now all we have to find is the orthogonal velocity of the shot
 
-			float shotVelSpeed = shotVelTang.Length();
+			double shotVelSpeed = shotVelTang.Length();
 			if (shotVelSpeed > meteoroidSpeed)
 			{
-				return Vector3.Multiply(targetVel, meteoroidSpeed);
+				return Vector3D.Multiply(targetVel, meteoroidSpeed);
 			}
 			else
 			{
-				float shotSpeedOrth = (float)Math.Sqrt(meteoroidSpeed * meteoroidSpeed - shotVelSpeed * shotVelSpeed);
-				Vector3 shotVelOrth = dirToTarget * shotSpeedOrth;
+				double shotSpeedOrth = (double)Math.Sqrt(meteoroidSpeed * meteoroidSpeed - shotVelSpeed * shotVelSpeed);
+				Vector3D shotVelOrth = dirToTarget * shotSpeedOrth;
 				return shotVelOrth + shotVelTang;
 			}
 		}
@@ -743,7 +756,7 @@ namespace PhysicsMeteroidsPlugin
 					}
 					catch (Exception ex)
 					{
-						LogManager.APILog.WriteLine(ex);
+						Log.Warn(ex);
 					}
 				}
 				if (targets.Count == 0) continue;
@@ -812,7 +825,7 @@ namespace PhysicsMeteroidsPlugin
 				}
 				catch (Exception ex)
 				{
-					LogManager.APILog.WriteLine(ex);
+					Log.Warn(ex);
 				}
 			}
 			if (targets.Count == 0) throw new PMNoTargetException("No targets availible");
@@ -822,23 +835,23 @@ namespace PhysicsMeteroidsPlugin
 			debugWrite("Selected target entityID: " + targets[targetno].EntityId.ToString());
 			return targets[targetno];
 		}
-		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel, Vector3Wrapper up, Vector3Wrapper forward, PhysicsMeteroidEvents _event, bool large = false)
+		private void spawnMeteor(Vector3D spawnpos, Vector3D vel, Vector3D up, Vector3D forward, PhysicsMeteroidEvents _event, bool large = false)
 		{
-			if (SandboxGameAssemblyWrapper.IsDebugging)
-			{
-				LogManager.APILog.WriteLineAndConsole("Physics Meteroid - spawnMeteor(" + spawnpos.ToString() + ", " + vel.ToString() + ", " + up.ToString() + ", " + forward.ToString() + ")" );
-			}
+
+			debugWrite("Physics Meteroid - spawnMeteor(" + spawnpos.ToString() + ", " + vel.ToString() + ", " + up.ToString() + ", " + forward.ToString() + ")" );
+			
 			if (_event.keenMeteoroid)
 			{
+				//Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd() will create an entity and add it to scene, then you need to sync with Sandbox.Game.Multiplayer.MySyncCreate.SendEntitiesCreated
 				MyObjectBuilder_Meteor tempobject;
 				MyObjectBuilder_Ore tempore = new MyObjectBuilder_Ore();
 				MyObjectBuilder_InventoryItem tempitem = new MyObjectBuilder_InventoryItem();
 				//tempore.SetDefaultProperties();
 				Meteor physicsmeteor;
 				m_ore_fctr = m_gen.NextDouble();
-
-				tempitem = (MyObjectBuilder_InventoryItem)MyObjectBuilder_InventoryItem.CreateNewObject(m_InventoryItemType);
-				tempitem.PhysicalContent = (MyObjectBuilder_PhysicalObject)MyObjectBuilder_PhysicalObject.CreateNewObject(m_OreType);
+				tempobject = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
+				tempitem = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_InventoryItem>();
+				tempitem.PhysicalContent = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_PhysicalObject>();
 				tempitem.PhysicalContent.SubtypeName = getRandomOre();
 
 				if (!large)
@@ -848,26 +861,26 @@ namespace PhysicsMeteroidsPlugin
 				if (tempitem.Amount < (MyFixedPoint)0.01) tempitem.Amount = (MyFixedPoint)0.01;
 				tempitem.ItemId = 0;
 
-				tempobject = (MyObjectBuilder_Meteor)MyObjectBuilder_Meteor.CreateNewObject(m_MeteorObjectType);
+				//tempobject = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
 				tempobject.Item = tempitem;
+				tempobject.LinearVelocity = vel;
+				tempobject.PositionAndOrientation = new MyPositionAndOrientation(spawnpos, forward, up);
+				MyEntity obj =  Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd(tempobject);
+				List<MyObjectBuilder_EntityBase> entities = new List<MyObjectBuilder_EntityBase>();
+				entities.Add(obj.GetObjectBuilder());
+				Sandbox.Game.Multiplayer.MySyncCreate.SendEntitiesCreated(entities);
 
-				physicsmeteor = new Meteor(tempobject);
-				physicsmeteor.Up = up;
-				physicsmeteor.Forward = forward;
-				physicsmeteor.Position = spawnpos;
-				physicsmeteor.LinearVelocity = vel;
-				physicsmeteor.MaxLinearVelocity = 104.7F * _event.maxVelocityFctr;
-				if (SandboxGameAssemblyWrapper.IsDebugging)
-				{
-					LogManager.APILog.WriteLineAndConsole("Meteor entityID: " + physicsmeteor.EntityId.ToString() + " Velocity: " + vel.ToString());
-				}
-				SectorObjectManager.Instance.AddEntity(physicsmeteor);
+				
+				debugWrite("Meteor entityID: " + obj.EntityId.ToString() + " Velocity: " + vel.ToString());
+				
+				//SectorObjectManager.Instance.AddEntity(physicsmeteor);
 				//workaround for the velocity problem.
-				Thread physicsthread = new Thread(() => velocityloop(physicsmeteor, vel, _event));
+				Thread physicsthread = new Thread(() => velocityloop(obj, vel, _event));
 				physicsthread.Start();	
 			}
 			else
 			{
+				/*
 				MyObjectBuilder_FloatingObject tempobject;
 				MyObjectBuilder_Ore tempore = new MyObjectBuilder_Ore();
 				MyObjectBuilder_InventoryItem tempitem = new MyObjectBuilder_InventoryItem();
@@ -897,19 +910,20 @@ namespace PhysicsMeteroidsPlugin
 				physicsmeteor.MaxLinearVelocity = 104.7F * _event.maxVelocityFctr;
 				if (SandboxGameAssemblyWrapper.IsDebugging)
 				{
-					LogManager.APILog.WriteLineAndConsole("Meteor entityID: " + physicsmeteor.EntityId.ToString() + " Velocity: " + vel.ToString());
+					Log.Debug("Meteor entityID: " + physicsmeteor.EntityId.ToString() + " Velocity: " + vel.ToString());
 				}
 				SectorObjectManager.Instance.AddEntity(physicsmeteor);
 				//workaround for the velocity problem.
 				Thread physicsthread = new Thread(() => velocityloop(physicsmeteor, vel, _event));
 				physicsthread.Start();	
+				 * */
 			}
 
 
 		}
-		private void spawnMeteor(Vector3Wrapper spawnpos, Vector3Wrapper vel, PhysicsMeteroidEvents _event, bool large = false)
+		private void spawnMeteor(Vector3D spawnpos, Vector3D vel, PhysicsMeteroidEvents _event, bool large = false)
 		{
-			spawnMeteor(spawnpos, vel, new Vector3Wrapper(0F,1F,0F), new Vector3Wrapper(0F,0F,-1F), _event, large);
+			spawnMeteor(spawnpos, vel, new Vector3D(0F,1F,0F), new Vector3D(0F,0F,-1F), _event, large);
 		}
 		private string getRandomOre()
 		{
@@ -1001,7 +1015,7 @@ namespace PhysicsMeteroidsPlugin
 				}
 				catch (Exception ex)
 				{
-					LogManager.APILog.WriteLine(ex);
+					Log.Warn(ex);
 				}
 			}
 			return;
@@ -1018,7 +1032,7 @@ namespace PhysicsMeteroidsPlugin
 				}
 				catch (Exception ex)
 				{
-					LogManager.APILog.WriteLineAndConsole(ex.ToString());
+					Log.Warn(ex.ToString());
 				}
 				Thread.Sleep(1000);
 			}
@@ -1053,7 +1067,7 @@ namespace PhysicsMeteroidsPlugin
 
 		public override void Shutdown()
 		{
-			LogManager.APILog.WriteLineAndConsole("Shutting Down Physics Meteoroid Plugin.");
+			Log.Info("Shutting Down Physics Meteoroid Plugin.");
 			saveXML();
 			//Thread.Sleep(300);//wait for functions to complete. 
 			m_running = false;
@@ -1070,6 +1084,7 @@ namespace PhysicsMeteroidsPlugin
 		#endregion
 		#region "chatCommands"
 
+		/*
 		public void CommandEvent(ChatManager.ChatEvent _event)
 		{
 			try
@@ -1359,7 +1374,7 @@ namespace PhysicsMeteroidsPlugin
 
 			}
 		}
-
+		*/
 		#endregion
 
 		#endregion

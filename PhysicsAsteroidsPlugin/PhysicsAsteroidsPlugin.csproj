@@ -47,32 +47,63 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Sandbox.Common">
-      <HintPath>..\Libraries\Sandbox.Common.dll</HintPath>
+    <Reference Include="NLog">
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\NLog.dll</HintPath>
     </Reference>
-    <Reference Include="Sandbox.Common.XmlSerializers">
-      <HintPath>..\Libraries\Sandbox.Common.XmlSerializers.dll</HintPath>
+    <Reference Include="Sandbox.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\Sandbox.Common.dll</HintPath>
     </Reference>
-    <Reference Include="SEModAPI">
-      <HintPath>..\Libraries\SEModAPI.dll</HintPath>
+    <Reference Include="Sandbox.Game, Version=0.1.5354.23738, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Bin64\Sandbox.Game.dll</HintPath>
     </Reference>
-    <Reference Include="SEModAPIExtensions">
-      <HintPath>..\Libraries\SEModAPIExtensions.dll</HintPath>
+    <Reference Include="SEComm">
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\SEComm.dll</HintPath>
     </Reference>
-    <Reference Include="SEModAPIInternal">
-      <HintPath>..\Libraries\SEModAPIInternal.dll</HintPath>
+    <Reference Include="SEModAPI, Version=0.2.6.4, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\SEModAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="SEModAPIExtensions, Version=0.1.6.7, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\SEModAPIExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="SEModAPIInternal, Version=0.2.3.6, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\SEModAPIInternal.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.XML" />
-    <Reference Include="VRage.Common">
-      <HintPath>..\Libraries\VRage.Common.dll</HintPath>
+    <Reference Include="VRage">
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\VRage.dll</HintPath>
     </Reference>
-    <Reference Include="VRage.Library">
-      <HintPath>..\Libraries\VRage.Library.dll</HintPath>
+    <Reference Include="VRage.Dedicated">
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\VRage.Dedicated.dll</HintPath>
     </Reference>
-    <Reference Include="VRage.Math">
-      <HintPath>..\Libraries\VRage.Math.dll</HintPath>
+    <Reference Include="VRage.Game">
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\VRage.Game.dll</HintPath>
+    </Reference>
+    <Reference Include="VRage.Game.XmlSerializers">
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\VRage.Game.XmlSerializers.dll</HintPath>
+    </Reference>
+    <Reference Include="VRage.Input">
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\VRage.Input.dll</HintPath>
+    </Reference>
+    <Reference Include="VRage.Library, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\VRage.Library.dll</HintPath>
+    </Reference>
+    <Reference Include="VRage.Math, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\VRage.Math.dll</HintPath>
+    </Reference>
+    <Reference Include="VRage.Native">
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\VRage.Native.dll</HintPath>
+    </Reference>
+    <Reference Include="VRage.Render">
+      <HintPath>C:\Users\Chris\Desktop\Ded64\DedicatedServer\DedicatedServer64\VRage.Render.dll</HintPath>
     </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
