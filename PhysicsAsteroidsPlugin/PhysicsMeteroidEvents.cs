@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using VRageMath;
+using System.Text.RegularExpressions;
 
 using SEModAPI.API;
 
@@ -78,7 +79,7 @@ namespace PhysicsMeteroidsPlugin
 		public string name
 		{
 			get { return m_name; }
-			set { m_name = value; }
+			set { m_name = Regex.Replace(value, @"\s+", ""); }
 		}
 		[Browsable(true)]
 		[TypeConverter(typeof(EventTypeConverter))]

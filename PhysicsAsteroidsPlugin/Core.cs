@@ -15,6 +15,8 @@ using Sandbox.Common.ObjectBuilders.VRageData;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.Game.World;
+using Sandbox.Engine.Networking;
+using Sandbox.ModAPI;
 
 using SEModAPIExtensions.API.Plugin;
 using SEModAPIExtensions.API.Plugin.Events;
@@ -45,14 +47,14 @@ using VRage.Game;
 using VRage.FileSystem;
 using NLog;
 
-using Sandbox.Game.Entities;
+
 
 
 
 
 namespace PhysicsMeteroidsPlugin
 {
-	public class PhysicsMeteroidCore : PluginBase
+	public class PhysicsMeteroidCore : PluginBase, IChatEventHandler
 	{
 		public static Logger Log;
 		#region "Attributes"
@@ -89,10 +91,12 @@ namespace PhysicsMeteroidsPlugin
 
 		public override void Init()
 		{
+
+
 			settings = new PhysicsMeteroidSettings();
 			m_running = false;
 			m_control = false;
-			m_gen = new Random(3425325);//temp hash
+			m_gen = new Random((int)System.DateTime.UtcNow.ToBinary());
 			Console.WriteLine("PhysicsMeteoroidPlugin '" + Id.ToString() + "' initialized!");
 			loadXML();
 			m_control = true;
@@ -100,62 +104,7 @@ namespace PhysicsMeteroidsPlugin
 			if (events.Count == 0) 
 				events.Add(new PhysicsMeteroidEvents());
 
-			//Register Chat Commands
-			/*ChatManager.ChatCommand command = new ChatManager.ChatCommand();
-			command.callback = CommandSaveXML;
-			command.command = "pm-save";
-			command.requiresAdmin = true;
-			ChatManager.Instance.RegisterChatCommand(command);
 
-			command = new ChatManager.ChatCommand();
-			command.callback = CommandLoadXML;
-			command.command = "pm-load";
-			command.requiresAdmin = true;
-			ChatManager.Instance.RegisterChatCommand(command);
-
-			command = new ChatManager.ChatCommand();
-			command.callback = CommandLoadDefaults;
-			command.command = "pm-loaddefaults";
-			command.requiresAdmin = true;
-			ChatManager.Instance.RegisterChatCommand(command);
-
-			command = new ChatManager.ChatCommand();
-			command.callback = CommandEnableMeteroid;
-			command.command = "pm-enable";
-			command.requiresAdmin = true;
-			ChatManager.Instance.RegisterChatCommand(command);
-
-			command = new ChatManager.ChatCommand();
-			command.callback = CommandDisableMeteroid;
-			command.command = "pm-disable";
-			command.requiresAdmin = true;
-			ChatManager.Instance.RegisterChatCommand(command);
-
-			command = new ChatManager.ChatCommand();
-			command.callback = CommandSpawnWave;
-			command.command = "pm-spawnwave";
-			command.requiresAdmin = true;
-			ChatManager.Instance.RegisterChatCommand(command);
-
-			command = new ChatManager.ChatCommand();
-			command.callback = CommandSpawnSectorWave;
-			command.command = "pm-sectorwave";
-			command.requiresAdmin = true;
-			ChatManager.Instance.RegisterChatCommand(command);
-
-			command = new ChatManager.ChatCommand();
-			command.callback = CommandSpawnPos;
-			command.command = "pm-sectorpos";
-			command.requiresAdmin = true;
-			ChatManager.Instance.RegisterChatCommand(command);
-
-			command = new ChatManager.ChatCommand();
-			command.callback = CommandEvent;
-			command.command = "pm-event";
-			command.requiresAdmin = true;
-			ChatManager.Instance.RegisterChatCommand(command);
-			//End Register Chat commands
-			*/
 			meteorcheck = new Thread(meteorScanLoop);
 			meteorcheck.Start();
 
@@ -179,8 +128,7 @@ namespace PhysicsMeteroidsPlugin
 		[ReadOnly(true)]
 		public string Location
 		{
-			get { return VRage.FileSystem.MyFileSystem.SavesPath + "\\"; }
-
+			get { return MySession.Static.CurrentPath + "\\"; }
 		}
 
 		[Category("Utils")]
@@ -267,7 +215,11 @@ namespace PhysicsMeteroidsPlugin
 		private void debugWrite(string message)
 		{
 			if (isdebugging)
+			{
 				Log.Debug(message);
+				Console.WriteLine(message);
+			}
+				
 
 		}
 
@@ -297,6 +249,7 @@ namespace PhysicsMeteroidsPlugin
 			}
 			catch (Exception ex)
 			{
+				Console.WriteLine("Could not load configuration: " + ex.ToString());
 				Log.Info("Could not load configuration: " + ex.ToString());
 			}
 			try
@@ -312,30 +265,12 @@ namespace PhysicsMeteroidsPlugin
 			}
 			catch (Exception ex)
 			{
+				Console.WriteLine("Could not load configuration: " + ex.ToString());
 				Log.Warn("Could not load configuration: " + ex.ToString());
 			}
 
 		}
-		public void velocityloop(IMyEntity obj, Vector3D vel, PhysicsMeteroidEvents _event)
-		{
-			Thread.Sleep(20);
-			//for (int count = 20; count > 0; count--)
-			//{
-				
-				//if (obj.Mass > 0)
-				//{
-					//obj.Physics.MaxLinearVelocity = 104.7F * _event.maxVelocityFctr;
-					obj.Physics.LinearVelocity = vel;
-					
-					debugWrite("Meteor entityID: " + obj.EntityId.ToString() + " Velocity: " + vel.ToString());
-					
-					//break;
-				//}
-				//Thread.Sleep(20);
-			//}
-			
-			return;
-		}
+
 		private void showerPosition(PhysicsMeteroidEvents _event)
 		{
 			showerPosition(_event.location);
@@ -846,17 +781,11 @@ namespace PhysicsMeteroidsPlugin
 			
 			if (_event.keenMeteoroid)
 			{
-				//Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd() will create an entity and add it to scene, then you need to sync with Sandbox.Game.Multiplayer.MySyncCreate.SendEntitiesCreated
-				//MyObjectBuilder_Meteor tempobject;
+
 				MyFixedPoint amount = 0;
-				//MyObjectBuilder_Ore tempore = new MyObjectBuilder_Ore();
-				//MyObjectBuilder_InventoryItem tempitem = new MyObjectBuilder_InventoryItem();
-				//tempore.SetDefaultProperties();
-				//Meteor physicsmeteor;
+
 				m_ore_fctr = m_gen.NextDouble();
-				//tempobject = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
-				//tempitem = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_InventoryItem>();
-				//tempitem.PhysicalContent = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_PhysicalObject>();
+
 				string randorename = getRandomOre();
 
 				if (!large)
@@ -864,72 +793,51 @@ namespace PhysicsMeteroidsPlugin
 				else
 					amount = (MyFixedPoint)Math.Round((decimal)(_event.largeOreAmt * getOreFctr(randorename) * m_ore_fctr));
 				if (amount < (MyFixedPoint)0.01) amount = (MyFixedPoint)0.01;
-				//tempitem.ItemId = 0;
-				MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>("Stone"));
-				//tempobject = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
-				var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
-				meteorBuilder.Item = i.GetObjectBuilder();
-				meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
-				var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
-				//tempobject.Item = tempitem;
-				meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up); 
-				meteorEntity.Physics.LinearVelocity = vel;
-				meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
-				SandboxGameAssemblyWrapper.Instance.GameAction(() => {
-					//MyEntity obj = Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd(meteorEntity.GetObjectBuilder());
 
+				MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
+
+
+				SandboxGameAssemblyWrapper.Instance.GameAction(() => {
+					var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
+					meteorBuilder.Item = i.GetObjectBuilder();
+					meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
+					var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
+
+					meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up);
+					meteorEntity.Physics.LinearVelocity = vel;
+					meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
 					MyEntities.Add(meteorEntity);
 					Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());			
 				} );
-
-
-				
-				//debugWrite("Meteor entityID: " + obj.EntityId.ToString() + " Velocity: " + vel.ToString());
-				
-				//SectorObjectManager.Instance.AddEntity(physicsmeteor);
-				//workaround for the velocity problem.
-				//Thread physicsthread = new Thread(() => velocityloop(obj, vel, _event));
-				//physicsthread.Start();	
+	
 			}
 			else
 			{
-				/*
-				MyObjectBuilder_FloatingObject tempobject;
-				MyObjectBuilder_Ore tempore = new MyObjectBuilder_Ore();
-				MyObjectBuilder_InventoryItem tempitem = new MyObjectBuilder_InventoryItem();
-				//tempore.SetDefaultProperties();
-				FloatingObject physicsmeteor;
+				MyFixedPoint amount = 0;
+
 				m_ore_fctr = m_gen.NextDouble();
 
-				tempitem = (MyObjectBuilder_InventoryItem)MyObjectBuilder_InventoryItem.CreateNewObject(m_InventoryItemType);
-				tempitem.PhysicalContent = (MyObjectBuilder_PhysicalObject)MyObjectBuilder_PhysicalObject.CreateNewObject(m_OreType);
-				tempitem.PhysicalContent.SubtypeName = getRandomOre();
+				string randorename = getRandomOre();
 
 				if (!large)
-					tempitem.Amount = (MyFixedPoint)Math.Round((decimal)(_event.oreAmt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
+					amount = (MyFixedPoint)Math.Round((decimal)(_event.oreAmt * getOreFctr(randorename) * m_ore_fctr));
 				else
-					tempitem.Amount = (MyFixedPoint)Math.Round((decimal)(_event.largeOreAmt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
-				if (tempitem.Amount < (MyFixedPoint)0.01) tempitem.Amount = (MyFixedPoint)0.01;
-				tempitem.ItemId = 0;
-
-				tempobject = (MyObjectBuilder_FloatingObject)MyObjectBuilder_FloatingObject.CreateNewObject(m_FloatingObjectType);
-				tempobject.Item = tempitem;
-
-				physicsmeteor = new FloatingObject(tempobject);
-				physicsmeteor.Up = up;
-				physicsmeteor.Forward = forward;
-				physicsmeteor.Position = spawnpos;
-				physicsmeteor.LinearVelocity = vel;
-				physicsmeteor.MaxLinearVelocity = 104.7F * _event.maxVelocityFctr;
-				if (SandboxGameAssemblyWrapper.IsDebugging)
+					amount = (MyFixedPoint)Math.Round((decimal)(_event.largeOreAmt * getOreFctr(randorename) * m_ore_fctr));
+				if (amount < (MyFixedPoint)0.01) amount = (MyFixedPoint)0.01;
+				MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
+				SandboxGameAssemblyWrapper.Instance.GameAction(() =>
 				{
-					Log.Debug("Meteor entityID: " + physicsmeteor.EntityId.ToString() + " Velocity: " + vel.ToString());
-				}
-				SectorObjectManager.Instance.AddEntity(physicsmeteor);
-				//workaround for the velocity problem.
-				Thread physicsthread = new Thread(() => velocityloop(physicsmeteor, vel, _event));
-				physicsthread.Start();	
-				 * */
+					//MyEntity obj = Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd(meteorEntity.GetObjectBuilder());
+					var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_FloatingObject>();
+					meteorBuilder.Item = i.GetObjectBuilder();
+					meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
+					var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
+					meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up);
+					meteorEntity.Physics.LinearVelocity = vel;
+					meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
+					MyEntities.Add(meteorEntity);
+					Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());
+				});
 			}
 
 
@@ -1007,7 +915,8 @@ namespace PhysicsMeteroidsPlugin
 						{
 							_event.lastrun = DateTime.UtcNow;
 							_event.nextrun = DateTime.UtcNow + TimeSpan.FromSeconds(_event.interval + (m_gen.NextDouble() * _event.randInterval * 2) - _event.randInterval);
-							if (_event.enabled && meteoron)
+							int connectedPlayers = ServerNetworkManager.Instance.GetConnectedPlayers().Count;
+							if (_event.enabled && meteoron && connectedPlayers > 0)
 							{
 								switch (_event.eventType)
 								{
@@ -1105,13 +1014,50 @@ namespace PhysicsMeteroidsPlugin
 
 		#endregion
 		#region "chatCommands"
+		public void OnChatReceived(ChatManager.ChatEvent obj)
+		{
+			if (obj.Message[0] != '/')
+				return;
 
-		/*
+			HandleChatMessage(obj);
+		}
+		public void OnChatSent(ChatManager.ChatEvent obj)
+		{
+			return;
+		}
+		public void HandleChatMessage(ChatManager.ChatEvent _event)
+		{
+			
+			string[] words = _event.Message.Split(' ');
+			words[0] = words[0].ToLower();
+			bool isadmin = (PlayerManager.Instance.IsUserAdmin(_event.SourceUserId) || _event.SourceUserId == 0);
+			if (words[0] == "/pm-save" && isadmin)
+				CommandSaveXML(_event);
+			if (words[0] == "/pm-load" && isadmin)
+				CommandLoadXML(_event);
+			if (words[0] == "/pm-loaddefaults" && isadmin)
+				CommandLoadDefaults(_event);
+			if (words[0] == "/pm-enable" && isadmin)
+				CommandEnableMeteroid(_event);
+			if (words[0] == "/pm-disable" && isadmin)
+				CommandDisableMeteroid(_event);
+			if (words[0] == "/pm-spawnwave" && isadmin)
+				CommandSpawnWave(_event);
+			if (words[0] == "/pm-sectorwave" && isadmin)
+				CommandSpawnSectorWave(_event);
+			if (words[0] == "/pm-sectorpos" && isadmin)
+				CommandSpawnPos(_event);
+			if (words[0] == "/pm-event" && isadmin)
+				CommandEvent(_event);
+			if (words[0] == "/pm-smite" && isadmin)
+				CommandSmitePlayer(_event);
+		}
+		
 		public void CommandEvent(ChatManager.ChatEvent _event)
 		{
 			try
 			{
-				string[] words = _event.message.Split(' ');
+				string[] words = _event.Message.Split(' ');
 				if(words.Count() >= 1)
 				{
 					if (words[1].ToLower() == "set")
@@ -1126,44 +1072,44 @@ namespace PhysicsMeteroidsPlugin
 								if (words[3].ToLower() == "oreamt")
 								{
 									evt.oreAmt = Convert.ToDouble(rem.Trim());
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Ore amount set to " + evt.oreAmt.ToString());
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Ore amount set to " + evt.oreAmt.ToString());
 								}
 								else if (words[3].ToLower() == "largeoreamt")
 								{
 									evt.largeOreAmt = Convert.ToDouble(rem.Trim());
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Large Ore amount set to " + evt.largeOreAmt.ToString());
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Large Ore amount set to " + evt.largeOreAmt.ToString());
 								}
 								else if (words[3].ToLower() == "interval")
 								{
 									evt.interval = Convert.ToInt32(rem.Trim());
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Interval set to " + evt.interval.ToString());
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Interval set to " + evt.interval.ToString());
 								}
 								else if (words[3].ToLower() == "randinterval")
 								{
 									evt.randInterval = Convert.ToInt32(rem.Trim());
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Random Interval set to " + evt.randInterval.ToString());
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Random Interval set to " + evt.randInterval.ToString());
 								}
 								else if (words[3].ToLower() == "type")
 								{
 									if(words[4].ToLower() == "sector")
 									{
 										evt.eventType = "Sector";
-										ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Type set to " + evt.eventType.ToString());
+										ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Type set to " + evt.eventType.ToString());
 									}
 									else if (words[4].ToLower() == "individual")
 									{
 										evt.eventType = "Individual";
-										ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Type set to " + evt.eventType.ToString());
+										ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Type set to " + evt.eventType.ToString());
 
 									}
 									else if (words[4].ToLower() == "location")
 									{
 										evt.eventType = "Location";
-										ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Type set to " + evt.eventType.ToString());
+										ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Type set to " + evt.eventType.ToString());
 
 									}
 									else
-										ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Invalid type, valid types are Sector, Individual, and Location");
+										ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Invalid type, valid types are Sector, Individual, and Location");
 
 								}
 								else if (words[3].ToLower() == "location")
@@ -1171,20 +1117,20 @@ namespace PhysicsMeteroidsPlugin
 									int x = Convert.ToInt32(words[3]);
 									int y = Convert.ToInt32(words[4]);
 									int z = Convert.ToInt32(words[5]);
-									Vector3Wrapper location = new Vector3Wrapper(x,y,z);
+									Vector3D location = new Vector3D(x,y,z);
 									evt.location = location;
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Location set to " + evt.location.ToString());
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Location set to " + evt.location.ToString());
 								}
 								else
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Invalid arguement, valid arguments are oreamt, largeoreamt, interval, randinterval, type, location.");
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Invalid arguement, valid arguments are oreamt, largeoreamt, interval, randinterval, type, location.");
 
 							}
 							else
-								ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Could not find event: " + eventname.ToString());
+								ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Could not find event: " + eventname.ToString());
 						}
 						else
 						{
-							ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Must specify eventname /pm-event set [eventname] [args]");
+							ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Must specify eventname /pm-event set [eventname] [args]");
 						}
 					}
 					else if (words[1].ToLower() == "get")
@@ -1197,39 +1143,39 @@ namespace PhysicsMeteroidsPlugin
 							{
 								if (words[3].ToLower() == "oreamt")
 								{
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Ore amount is " + evt.oreAmt.ToString());
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Ore amount is " + evt.oreAmt.ToString());
 								}
 								else if (words[3].ToLower() == "largeoreamt")
 								{
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Large Ore amount is " + evt.largeOreAmt.ToString());
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Large Ore amount is " + evt.largeOreAmt.ToString());
 								}
 								else if (words[3].ToLower() == "interval")
 								{
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Interval is " + evt.interval.ToString());
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Interval is " + evt.interval.ToString());
 								}
 								else if (words[3].ToLower() == "randinterval")
 								{
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Random Interval is " + evt.randInterval.ToString());
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Random Interval is " + evt.randInterval.ToString());
 								}
 								else if (words[3].ToLower() == "type")
 								{
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Type is " + evt.eventType.ToString());
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Type is " + evt.eventType.ToString());
 								}
 								else if (words[3].ToLower() == "location")
 								{
-			
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Location is " + evt.location.ToString());
+
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Location is " + evt.location.ToString());
 								}
 								else
-									ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Invalid arguement, valid arguments are oreamt, largeoreamt, interval, randinterval, type, location.");
+									ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Invalid arguement, valid arguments are oreamt, largeoreamt, interval, randinterval, type, location.");
 
 							}
 							else
-								ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Could not find event: " + eventname.ToString());
+								ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Could not find event: " + eventname.ToString());
 						}
 						else
 						{
-							ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Must specify eventname /pm-event get [eventname] [args]");
+							ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Must specify eventname /pm-event get [eventname] [args]");
 						}
 					}
 					else if (words[1].ToLower() == "create")
@@ -1247,7 +1193,7 @@ namespace PhysicsMeteroidsPlugin
 						}
 						else
 						{
-							ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Must specify eventname /pm-event create [eventname]");
+							ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Must specify eventname /pm-event create [eventname]");
 						}
 					}
 					else if (words[1].ToLower() == "delete")
@@ -1258,22 +1204,22 @@ namespace PhysicsMeteroidsPlugin
 							PhysicsMeteroidEvents evt = events.Find(x => x.name.ToLower() == eventname.ToLower());
 							if(evt == null)
 							{
-								ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Could not find event: " + eventname.ToString());
+								ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Could not find event: " + eventname.ToString());
 							}
 							else
 							{
 								events.Remove(evt);
-								ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Deleted " + eventname.ToString());
+								ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Deleted " + eventname.ToString());
 							}
 						}
 						else
 						{
-							ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Must specify eventname /pm-event delete [eventname]");
+							ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Must specify eventname /pm-event delete [eventname]");
 						}
 					}
 					else
 					{
-						ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Invalid arguement, second arguement must be set, get, create, or delete");
+						ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Invalid arguement, second arguement must be set, get, create, or delete");
 					}
 				}
 			}
@@ -1287,26 +1233,26 @@ namespace PhysicsMeteroidsPlugin
 		{
 			try
 			{
-				string[] words = _event.message.Split(' ');
+				string[] words = _event.Message.Split(' ');
 				if (words.Count() > 2)
 				{
 					String rem = String.Join(" ", words, 2, words.Count() - 2);
 					if (words[1] == "small")
 					{
 						smitePlayer(rem, false);
-						ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Dropping small rock on: " + rem);
+						ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Dropping small rock on: " + rem);
 					}
 					if (words[1] == "large")
 					{
 						smitePlayer(rem, true);
-						ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Dropping large rock on: " + rem);
+						ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Dropping large rock on: " + rem);
 					}
 				}
 				if (words.Count() > 1)
 				{
 					String rem = String.Join(" ", words, 1, words.Count() - 1);
 					smitePlayer(rem, false);
-					ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Dropping small rock on: " + rem);
+					ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Dropping small rock on: " + rem);
 				}
 			}
 			catch (PMNoTargetException ex)
@@ -1318,15 +1264,15 @@ namespace PhysicsMeteroidsPlugin
 
 		public void CommandSpawnPos(ChatManager.ChatEvent _event)
 		{
-			string[] words = _event.message.Split(' ');
+			string[] words = _event.Message.Split(' ');
 			if (words.Count() > 3)
 			{
 				int x = Convert.ToInt32(words[1]);
 				int y = Convert.ToInt32(words[2]);
 				int z = Convert.ToInt32(words[3]);
-				Thread t = new Thread(() => showerPosition(new Vector3Wrapper(x, y, z)));
+				Thread t = new Thread(() => showerPosition(new Vector3D(x, y, z)));
 				t.Start();
-				ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Starting meteoriod storm at " + x.ToString() + " " + y.ToString() + " " + z.ToString());
+				ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Starting meteoriod storm at " + x.ToString() + " " + y.ToString() + " " + z.ToString());
 			}
 		}
 
@@ -1334,7 +1280,7 @@ namespace PhysicsMeteroidsPlugin
 		{
 			Thread t = new Thread(() => createMeteorStorm(events.First()));
 			t.Start();
-			ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Starting meteoriod storm");
+			ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Starting meteoriod storm");
 			return;
 		}
 
@@ -1342,19 +1288,19 @@ namespace PhysicsMeteroidsPlugin
 		{
 			Thread t = new Thread(() => createSectorStorm(events.First()));
 			t.Start();
-			ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Starting meteoriod sector wide storm");
+			ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Starting meteoriod sector wide storm");
 			return;
 		}
 
 		public void CommandEnableMeteroid(ChatManager.ChatEvent _event)
 		{
-			ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Automatic Meteoroid storms enabled.");
+			ChatManager.Instance.SendPrivateChatMessage(_event.RemoteUserId, "Automatic Meteoroid storms enabled.");
 			settings.meteorOn = true;
 		}
 
 		public void CommandDisableMeteroid(ChatManager.ChatEvent _event)
 		{
-			ChatManager.Instance.SendPrivateChatMessage(_event.sourceUserId, "Automatic Meteoroid storms disabled.");
+			ChatManager.Instance.SendPrivateChatMessage(_event.SourceUserId, "Automatic Meteoroid storms disabled.");
 			settings.meteorOn = false;
 		}
 
@@ -1363,7 +1309,7 @@ namespace PhysicsMeteroidsPlugin
 			saveXML();
 			try
 			{
-				ChatManager.Instance.SendPrivateChatMessage(_event.remoteUserId, "Physics Meteroid Settings Saved.");
+				ChatManager.Instance.SendPrivateChatMessage(_event.RemoteUserId, "Physics Meteroid Settings Saved.");
 			}
 			catch
 			{
@@ -1376,7 +1322,7 @@ namespace PhysicsMeteroidsPlugin
 			loadXML(false);
 			try
 			{
-				ChatManager.Instance.SendPrivateChatMessage(_event.remoteUserId, "Physics Meteroid Settings Loaded.");
+				ChatManager.Instance.SendPrivateChatMessage(_event.RemoteUserId, "Physics Meteroid Settings Loaded.");
 			}
 			catch
 			{
@@ -1389,14 +1335,14 @@ namespace PhysicsMeteroidsPlugin
 			loadXML(true);
 			try
 			{
-				ChatManager.Instance.SendPrivateChatMessage(_event.remoteUserId, "Physics Meteroid Settings Defaults Loaded.");
+				ChatManager.Instance.SendPrivateChatMessage(_event.RemoteUserId, "Physics Meteroid Settings Defaults Loaded.");
 			}
 			catch
 			{
 
 			}
 		}
-		*/
+		
 		#endregion
 
 		#endregion
