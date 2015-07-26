@@ -31,6 +31,7 @@ namespace PhysicsMeteroidsPlugin
 			return new StandardValuesCollection(new string[] { "Individual", "Sector", "Location" });
 		}
 	}
+
 	[Serializable()]
 	public class PhysicsMeteroidEvents
 	{
@@ -209,13 +210,27 @@ namespace PhysicsMeteroidsPlugin
 			set { if (value > 10) m_spacingTimer = value; else m_spacingTimer = 10; }
 		}
 		[Browsable(true)]
-		[TypeConverter(typeof(Vector3D))]
 		public Vector3D location
 		{
 			get { return m_location; }
 			set { m_location = value; }
 		}
-
+		[Browsable(true)]
+		public double location_X
+		{
+			get { return m_location.X; }
+			set { m_location.X = value; }
+		}
+		public double location_Y
+		{
+			get { return m_location.Y; }
+			set { m_location.Y = value; }
+		}
+		public double location_Z
+		{
+			get { return m_location.Z; }
+			set { m_location.Z = value; }
+		}
 		[Browsable(true)]
 		public bool enabled
 		{
