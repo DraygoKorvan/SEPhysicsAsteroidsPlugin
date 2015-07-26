@@ -12,6 +12,9 @@ using System.Xml.Serialization;
 
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Common.ObjectBuilders.VRageData;
+using Sandbox.Game;
+using Sandbox.Game.Entities;
+using Sandbox.Game.World;
 
 using SEModAPIExtensions.API.Plugin;
 using SEModAPIExtensions.API.Plugin.Events;
@@ -34,10 +37,11 @@ using SEModAPI;
 using VRageMath;
 using VRage.Common.Utils;
 using VRage;
+using VRage.Utils;
 using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRage.Game;
-using Sandbox.Common.ObjectBuilders;
+//using Sandbox.Common.ObjectBuilders;
 using VRage.FileSystem;
 using NLog;
 
@@ -315,8 +319,8 @@ namespace PhysicsMeteroidsPlugin
 		public void velocityloop(IMyEntity obj, Vector3D vel, PhysicsMeteroidEvents _event)
 		{
 			Thread.Sleep(20);
-			for (int count = 20; count > 0; count--)
-			{
+			//for (int count = 20; count > 0; count--)
+			//{
 				
 				//if (obj.Mass > 0)
 				//{
@@ -325,10 +329,10 @@ namespace PhysicsMeteroidsPlugin
 					
 					debugWrite("Meteor entityID: " + obj.EntityId.ToString() + " Velocity: " + vel.ToString());
 					
-					break;
+					//break;
 				//}
-				Thread.Sleep(20);
-			}
+				//Thread.Sleep(20);
+			//}
 			
 			return;
 		}
@@ -835,7 +839,7 @@ namespace PhysicsMeteroidsPlugin
 			debugWrite("Selected target entityID: " + targets[targetno].EntityId.ToString());
 			return targets[targetno];
 		}
-		private void spawnMeteor(Vector3D spawnpos, Vector3D vel, Vector3D up, Vector3D forward, PhysicsMeteroidEvents _event, bool large = false)
+		private void spawnMeteor(Vector3D spawnpos, Vector3D vel, Vector3 up, Vector3 forward, PhysicsMeteroidEvents _event, bool large = false)
 		{
 
 			debugWrite("Physics Meteroid - spawnMeteor(" + spawnpos.ToString() + ", " + vel.ToString() + ", " + up.ToString() + ", " + forward.ToString() + ")" );
@@ -843,40 +847,49 @@ namespace PhysicsMeteroidsPlugin
 			if (_event.keenMeteoroid)
 			{
 				//Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd() will create an entity and add it to scene, then you need to sync with Sandbox.Game.Multiplayer.MySyncCreate.SendEntitiesCreated
-				MyObjectBuilder_Meteor tempobject;
-				MyObjectBuilder_Ore tempore = new MyObjectBuilder_Ore();
-				MyObjectBuilder_InventoryItem tempitem = new MyObjectBuilder_InventoryItem();
+				//MyObjectBuilder_Meteor tempobject;
+				MyFixedPoint amount = 0;
+				//MyObjectBuilder_Ore tempore = new MyObjectBuilder_Ore();
+				//MyObjectBuilder_InventoryItem tempitem = new MyObjectBuilder_InventoryItem();
 				//tempore.SetDefaultProperties();
-				Meteor physicsmeteor;
+				//Meteor physicsmeteor;
 				m_ore_fctr = m_gen.NextDouble();
-				tempobject = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
-				tempitem = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_InventoryItem>();
-				tempitem.PhysicalContent = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_PhysicalObject>();
-				tempitem.PhysicalContent.SubtypeName = getRandomOre();
+				//tempobject = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
+				//tempitem = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_InventoryItem>();
+				//tempitem.PhysicalContent = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_PhysicalObject>();
+				string randorename = getRandomOre();
 
 				if (!large)
-					tempitem.Amount = (MyFixedPoint)Math.Round((decimal)(_event.oreAmt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
+					amount = (MyFixedPoint)Math.Round((decimal)(_event.oreAmt * getOreFctr(randorename) * m_ore_fctr));
 				else
-					tempitem.Amount = (MyFixedPoint)Math.Round((decimal)(_event.largeOreAmt * getOreFctr(tempitem.PhysicalContent.SubtypeName) * m_ore_fctr));
-				if (tempitem.Amount < (MyFixedPoint)0.01) tempitem.Amount = (MyFixedPoint)0.01;
-				tempitem.ItemId = 0;
-
+					amount = (MyFixedPoint)Math.Round((decimal)(_event.largeOreAmt * getOreFctr(randorename) * m_ore_fctr));
+				if (amount < (MyFixedPoint)0.01) amount = (MyFixedPoint)0.01;
+				//tempitem.ItemId = 0;
+				MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>("Stone"));
 				//tempobject = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
-				tempobject.Item = tempitem;
-				tempobject.LinearVelocity = vel;
-				tempobject.PositionAndOrientation = new MyPositionAndOrientation(spawnpos, forward, up);
-				MyEntity obj =  Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd(tempobject);
-				List<MyObjectBuilder_EntityBase> entities = new List<MyObjectBuilder_EntityBase>();
-				entities.Add(obj.GetObjectBuilder());
-				Sandbox.Game.Multiplayer.MySyncCreate.SendEntitiesCreated(entities);
+				var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
+				meteorBuilder.Item = i.GetObjectBuilder();
+				meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
+				var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
+				//tempobject.Item = tempitem;
+				meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up); 
+				meteorEntity.Physics.LinearVelocity = vel;
+				meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
+				SandboxGameAssemblyWrapper.Instance.GameAction(() => {
+					//MyEntity obj = Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd(meteorEntity.GetObjectBuilder());
+
+					MyEntities.Add(meteorEntity);
+					Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());			
+				} );
+
 
 				
-				debugWrite("Meteor entityID: " + obj.EntityId.ToString() + " Velocity: " + vel.ToString());
+				//debugWrite("Meteor entityID: " + obj.EntityId.ToString() + " Velocity: " + vel.ToString());
 				
 				//SectorObjectManager.Instance.AddEntity(physicsmeteor);
 				//workaround for the velocity problem.
-				Thread physicsthread = new Thread(() => velocityloop(obj, vel, _event));
-				physicsthread.Start();	
+				//Thread physicsthread = new Thread(() => velocityloop(obj, vel, _event));
+				//physicsthread.Start();	
 			}
 			else
 			{
@@ -923,7 +936,16 @@ namespace PhysicsMeteroidsPlugin
 		}
 		private void spawnMeteor(Vector3D spawnpos, Vector3D vel, PhysicsMeteroidEvents _event, bool large = false)
 		{
-			spawnMeteor(spawnpos, vel, new Vector3D(0F,1F,0F), new Vector3D(0F,0F,-1F), _event, large);
+			//insert keen code :)
+			Vector3 forward = -MySector.DirectionToSunNormalized;
+			Vector3 up = MyUtils.GetRandomVector3Normalized();
+			while (forward == up)
+				up = MyUtils.GetRandomVector3Normalized();
+
+			Vector3 right = Vector3.Cross(forward, up);
+			up = Vector3.Cross(right, forward);
+			//end
+			spawnMeteor(spawnpos, vel, forward, up, _event, large);
 		}
 		private string getRandomOre()
 		{
