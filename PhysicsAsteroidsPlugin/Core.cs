@@ -794,10 +794,11 @@ namespace PhysicsMeteroidsPlugin
 					amount = (MyFixedPoint)Math.Round((decimal)(_event.largeOreAmt * getOreFctr(randorename) * m_ore_fctr));
 				if (amount < (MyFixedPoint)0.01) amount = (MyFixedPoint)0.01;
 
-				MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
+				
 
 
 				SandboxGameAssemblyWrapper.Instance.GameAction(() => {
+					MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
 					var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
 					meteorBuilder.Item = i.GetObjectBuilder();
 					meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
@@ -824,9 +825,10 @@ namespace PhysicsMeteroidsPlugin
 				else
 					amount = (MyFixedPoint)Math.Round((decimal)(_event.largeOreAmt * getOreFctr(randorename) * m_ore_fctr));
 				if (amount < (MyFixedPoint)0.01) amount = (MyFixedPoint)0.01;
-				MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
+				
 				SandboxGameAssemblyWrapper.Instance.GameAction(() =>
 				{
+					MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
 					//MyEntity obj = Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd(meteorEntity.GetObjectBuilder());
 					var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_FloatingObject>();
 					meteorBuilder.Item = i.GetObjectBuilder();
