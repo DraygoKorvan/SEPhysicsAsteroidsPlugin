@@ -28,7 +28,7 @@ namespace PhysicsMeteroidsPlugin
 		public override System.ComponentModel.TypeConverter.StandardValuesCollection
 			   GetStandardValues(ITypeDescriptorContext context)
 		{
-			return new StandardValuesCollection(new string[] { "Individual", "Sector", "Location" });
+			return new StandardValuesCollection(new string[] { "Individual", "Sector", "Location", "Asteroid", "AsteroidSpawn" });
 		}
 	}
 
@@ -101,6 +101,12 @@ namespace PhysicsMeteroidsPlugin
 							m_location = new Vector3D(0, 0, 0);
 							m_eventType = "Location";
 						}
+						break;
+					case "Asteroid":
+						m_eventType = "Asteroid";
+						break;
+					case "AsteroidSpawn":
+						m_eventType = "AsteroidSpawn";
 						break;
 					default:
 						m_eventType = "";

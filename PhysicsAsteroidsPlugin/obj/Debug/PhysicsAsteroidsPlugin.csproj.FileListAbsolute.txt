@@ -50,3 +50,16 @@ D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.DirectInput.xml
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.Direct3D9.xml
 D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.XAudio2.xml
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\VRage.Render11.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.D3DCompiler.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.Direct3D11.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.DXGI.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.Toolkit.Graphics.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.Toolkit.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.Direct2D1.dll
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.D3DCompiler.xml
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.Direct3D11.xml
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.DXGI.xml
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.Toolkit.Graphics.xml
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.Toolkit.xml
+D:\SEProjects\SEPhysicsAsteroids\PhysicsAsteriodsPlugin\Asteroid-Delete-Release\PhysicsAsteroidsPlugin\bin\Debug\SharpDX.Direct2D1.xml
