@@ -52,13 +52,9 @@ namespace PhysicsMeteroidsPlugin
 		List<IMyVoxelMap> asteroids = new List<IMyVoxelMap>();
 		private Object _createAsteroidLck = new Object();
 
-		private Thread meteorcheck;
 		private Thread controlloop;
 		private Object _prepLock = new Object();
-		//private static Type m_InventoryItemType = new MyObjectBuilderType(typeof(MyObjectBuilder_InventoryItem));
-		//private static Type m_OreType = new MyObjectBuilderType(typeof(MyObjectBuilder_Ore));
-		//private static Type m_FloatingObjectType = new MyObjectBuilderType(typeof(MyObjectBuilder_FloatingObject));
-		//private static Type m_MeteorObjectType = new MyObjectBuilderType(typeof(MyObjectBuilder_Meteor));
+
 
 		private Random m_gen;
 
@@ -121,32 +117,12 @@ namespace PhysicsMeteroidsPlugin
 		}
 
 		[Category("Utils")]
-		[Description("MeteorScan Loop On")]
-		[Browsable(true)]
-		[ReadOnly(true)]
-		public bool MeteorScanLoop
-		{
-			get { return m_running; }
-
-		}
-
-		[Category("Utils")]
 		[Description("Control Loop on")]
 		[Browsable(true)]
 		[ReadOnly(true)]
 		public bool MeteorControlLoop
 		{
 			get { return m_control; }
-
-		}
-
-		[Category("Utils")]
-		[Description("Meteor Scan Loop Status")]
-		[Browsable(true)]
-		[ReadOnly(true)]
-		public string MeteorScanLoopThreadState
-		{
-			get { return meteorcheck.ThreadState.ToString(); }
 
 		}
 
@@ -272,7 +248,6 @@ namespace PhysicsMeteroidsPlugin
 					HashSet<IMyEntity> entities = new HashSet<IMyEntity>();
 					try
 					{
-
 						MyAPIGateway.Entities.GetEntities(entities);
 					}
 					catch
@@ -294,7 +269,6 @@ namespace PhysicsMeteroidsPlugin
 							asteroids.Add(tmpasteroid);
 							debugWrite("Adding asteroid, asteroid is big enough.");
 						}
-
 					}
 
 					if (asteroids.Count > 0) init_roids = true;
@@ -850,7 +824,6 @@ namespace PhysicsMeteroidsPlugin
 					meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
 					MyEntities.Add(meteorEntity);
 					//meteorEntity.Physics.Activate();
-					
 					Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());			
 				} );
 	
@@ -973,12 +946,13 @@ namespace PhysicsMeteroidsPlugin
 					meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
 					MyEntities.Add(meteorEntity);
 					//meteorEntity.Physics.Activate();
+					Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());
 					if (large)
 					{
 						meteorEntity.OnPhysicsChanged += onPhysicsChanged;
 						meteorEntity.RaisePhysicsChanged();
 					}
-					Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());
+					
 				});
 			}
 		}
@@ -997,6 +971,7 @@ namespace PhysicsMeteroidsPlugin
 		}
 		private void onPhysicsChanged(MyEntity obj)
 		{
+			obj.OnPhysicsChanged -= onPhysicsChanged;
 			Thread T = new Thread(() => monitorSpeed(obj));
 			T.Start();
 		}
@@ -1032,34 +1007,31 @@ namespace PhysicsMeteroidsPlugin
 		private void createVoxel(MyEntity obj)
 		{
 			debugWrite("Create Voxel");
-			try
+
+
+			SandboxGameAssemblyWrapper.Instance.GameAction(() =>
 			{
-				lock (_createAsteroidLck)
+				Vector3D pos = obj.PositionComp.GetPosition();
+
+				//find any existing asteroids?
+				debugWrite("createVoxel: making sure were not spawning inside something");
+				BoundingSphereD sphere = new BoundingSphereD(pos, 120);
+				List<IMyEntity> searchEntities = MyAPIGateway.Entities.GetEntitiesInSphere(ref sphere);
+				if (searchEntities.Count <= 1)
 				{
-
-					SandboxGameAssemblyWrapper.Instance.GameAction(() =>
-					{
-						Vector3D pos = obj.PositionComp.GetPosition();
-
-						//find any existing asteroids?
-						debugWrite("createVoxel: making sure were not spawning inside something");
-						BoundingSphereD sphere = new BoundingSphereD(pos, 120);
-						List<IMyEntity> searchEntities = MyAPIGateway.Entities.GetEntitiesInSphere(ref sphere);
-						if (searchEntities.Count == 0)
-						{
-							debugWrite("createVoxel: Spawning asteroid");
-							MyWorldGenerator.AddAsteroidPrefab("small3_asteroids", pos, string.Format("Debris_{0}_{1}_{1}", Math.Floor(pos.X), Math.Floor(pos.Y), Math.Floor(pos.Z)));
-						}
+					if (searchEntities.Count == 1)
+						if (!(searchEntities.First() is IMyFloatingObject))
+							return;
+					debugWrite("createVoxel: Spawning asteroid");
+					MyWorldGenerator.AddAsteroidPrefab("small3_asteroids", pos, string.Format("Debris_{0}_{1}_{1}", Math.Floor(pos.X), Math.Floor(pos.Y), Math.Floor(pos.Z)));
+							
+							
+				}
 							
 						
-						//Essentials should handle the sync, so do nothing. 
-					});
-				}
-			}
-			catch
-			{
-				debugWrite("Error in createvoxel");
-			}
+				//Essentials should handle the sync, so do nothing. 
+			});
+
 
 
 		}
@@ -1188,10 +1160,7 @@ namespace PhysicsMeteroidsPlugin
 			m_running = false;
 			m_control = false;
 			settings.meteorOn = false;
-			//rejoin the threads, wait for them to terminate, if not force them to terminate.
-			meteorcheck.Join(300);
-			controlloop.Join(300);
-			meteorcheck.Abort();
+
 			controlloop.Abort();
 			return;
 		}
