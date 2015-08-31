@@ -748,8 +748,17 @@ namespace PhysicsMeteroidsPlugin
 			List<IMyPlayer> players = new List<IMyPlayer>();
 			SandboxGameAssemblyWrapper.Instance.GameAction(() =>
 			{
-				MyAPIGateway.Players.GetPlayers(players);
-				MyAPIGateway.Entities.GetEntities(entities);
+				try
+				{
+					MyAPIGateway.Players.GetPlayers(players);
+					MyAPIGateway.Entities.GetEntities(entities);
+				}
+				catch (Exception ex)
+				{
+					Log.Error(ex);
+					throw new PMNoTargetException("Exception getting targets, aborting.");
+				}
+
 			});
 			if (players.Count <= 0)
 				throw new PMNoPlayersException("No players on server aborting.");
@@ -813,18 +822,26 @@ namespace PhysicsMeteroidsPlugin
 
 				//Console.WriteLine("Creating Meteor");
 				SandboxGameAssemblyWrapper.Instance.GameAction(() => {
-					MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
-					var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
-					meteorBuilder.Item = i.GetObjectBuilder();
-					meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
-					var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
+					try
+					{
+						MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
+						var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
+						meteorBuilder.Item = i.GetObjectBuilder();
+						meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
+						var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
 
-					meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up);
-					meteorEntity.Physics.LinearVelocity = vel;
-					meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
-					MyEntities.Add(meteorEntity);
-					//meteorEntity.Physics.Activate();
-					Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());			
+						meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up);
+						meteorEntity.Physics.LinearVelocity = vel;
+						meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
+						MyEntities.Add(meteorEntity);
+						//meteorEntity.Physics.Activate();
+						Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());
+					}
+					catch (Exception ex)
+					{
+						Log.Error(ex);
+					}
+		
 				} );
 	
 			}
@@ -843,18 +860,26 @@ namespace PhysicsMeteroidsPlugin
 				if (amount < (MyFixedPoint)0.01) amount = (MyFixedPoint)0.01;
 				SandboxGameAssemblyWrapper.Instance.GameAction(() =>
 				{
-					MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
-					//MyEntity obj = Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd(meteorEntity.GetObjectBuilder());
-					var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_FloatingObject>();
-					meteorBuilder.Item = i.GetObjectBuilder();
-					meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
-					var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
-					meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up);
-					meteorEntity.Physics.LinearVelocity = vel;
-					meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
-					MyEntities.Add(meteorEntity);
-					//meteorEntity.Physics.Activate();
-					Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());
+					try
+					{
+						MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
+						//MyEntity obj = Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd(meteorEntity.GetObjectBuilder());
+						var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_FloatingObject>();
+						meteorBuilder.Item = i.GetObjectBuilder();
+						meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
+						var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
+						meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up);
+						meteorEntity.Physics.LinearVelocity = vel;
+						meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
+						MyEntities.Add(meteorEntity);
+						//meteorEntity.Physics.Activate();
+						Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());
+					}
+					catch (Exception ex)
+					{
+						Log.Error(ex);
+					}
+
 				});
 			}
 
@@ -898,24 +923,32 @@ namespace PhysicsMeteroidsPlugin
 
 				SandboxGameAssemblyWrapper.Instance.GameAction(() =>
 				{
-					MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
-					var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
-					meteorBuilder.Item = i.GetObjectBuilder();
-					meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
-					var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
-
-					meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up);
-					meteorEntity.Physics.LinearVelocity = vel;
-					meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
-					MyEntities.Add(meteorEntity);
-					//meteorEntity.Physics.Activate();
-					if (large)
+					try
 					{
-						meteorEntity.OnPhysicsChanged += onPhysicsChanged;
-						meteorEntity.RaisePhysicsChanged();
+						MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
+						var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Meteor>();
+						meteorBuilder.Item = i.GetObjectBuilder();
+						meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
+						var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
+
+						meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up);
+						meteorEntity.Physics.LinearVelocity = vel;
+						meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
+						MyEntities.Add(meteorEntity);
+						//meteorEntity.Physics.Activate();
+						if (large)
+						{
+							meteorEntity.OnPhysicsChanged += onPhysicsChanged;
+							meteorEntity.RaisePhysicsChanged();
+						}
+
+						Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());
+					}
+					catch (Exception ex)
+					{
+						Log.Error(ex);
 					}
 
-					Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());
 				});
 
 			}
@@ -935,23 +968,31 @@ namespace PhysicsMeteroidsPlugin
 
 				SandboxGameAssemblyWrapper.Instance.GameAction(() =>
 				{
-					MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
-					//MyEntity obj = Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd(meteorEntity.GetObjectBuilder());
-					var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_FloatingObject>();
-					meteorBuilder.Item = i.GetObjectBuilder();
-					meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
-					var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
-					meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up);
-					meteorEntity.Physics.LinearVelocity = vel;
-					meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
-					MyEntities.Add(meteorEntity);
-					//meteorEntity.Physics.Activate();
-					Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());
-					if (large)
+					try
 					{
-						meteorEntity.OnPhysicsChanged += onPhysicsChanged;
-						meteorEntity.RaisePhysicsChanged();
+						MyPhysicalInventoryItem i = new MyPhysicalInventoryItem(amount, MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_Ore>(randorename));
+						//MyEntity obj = Sandbox.Game.Entities.MyEntities.CreateFromObjectBuilderAndAdd(meteorEntity.GetObjectBuilder());
+						var meteorBuilder = MyObjectBuilderSerializer.CreateNewObject<MyObjectBuilder_FloatingObject>();
+						meteorBuilder.Item = i.GetObjectBuilder();
+						meteorBuilder.PersistentFlags |= MyPersistentEntityFlags2.Enabled | MyPersistentEntityFlags2.InScene;
+						var meteorEntity = MyEntities.CreateFromObjectBuilder(meteorBuilder);
+						meteorEntity.WorldMatrix = Matrix.CreateWorld(spawnpos, forward, up);
+						meteorEntity.Physics.LinearVelocity = vel;
+						meteorEntity.Physics.AngularVelocity = MyUtils.GetRandomVector3Normalized() * MyUtils.GetRandomFloat(1.5f, 3);
+						MyEntities.Add(meteorEntity);
+						//meteorEntity.Physics.Activate();
+						Sandbox.Game.Multiplayer.MySyncCreate.SendEntityCreated(meteorEntity.GetObjectBuilder());
+						if (large)
+						{
+							meteorEntity.OnPhysicsChanged += onPhysicsChanged;
+							meteorEntity.RaisePhysicsChanged();
+						}
 					}
+					catch (Exception ex)
+					{
+						Log.Error(ex);
+					}
+
 					
 				});
 			}
@@ -1011,25 +1052,29 @@ namespace PhysicsMeteroidsPlugin
 
 			SandboxGameAssemblyWrapper.Instance.GameAction(() =>
 			{
-				Vector3D pos = obj.PositionComp.GetPosition();
-
-				//find any existing asteroids?
-				debugWrite("createVoxel: making sure were not spawning inside something");
-				BoundingSphereD sphere = new BoundingSphereD(pos, 120);
-				List<IMyEntity> searchEntities = MyAPIGateway.Entities.GetEntitiesInSphere(ref sphere);
-				if (searchEntities.Count <= 1)
+				try
 				{
-					if (searchEntities.Count == 1)
-						if (!(searchEntities.First() is IMyFloatingObject))
-							return;
-					debugWrite("createVoxel: Spawning asteroid");
-					MyWorldGenerator.AddAsteroidPrefab("small3_asteroids", pos, string.Format("Debris_{0}_{1}_{1}", Math.Floor(pos.X), Math.Floor(pos.Y), Math.Floor(pos.Z)));
-							
-							
+					Vector3D pos = obj.PositionComp.GetPosition();
+
+					//find any existing asteroids?
+					debugWrite("createVoxel: making sure were not spawning inside something");
+					BoundingSphereD sphere = new BoundingSphereD(pos, 120);
+					List<IMyEntity> searchEntities = MyAPIGateway.Entities.GetEntitiesInSphere(ref sphere);
+					if (searchEntities.Count <= 1)
+					{
+						if (searchEntities.Count == 1)
+							if (!(searchEntities.First() is IMyFloatingObject))
+								return;
+						debugWrite("createVoxel: Spawning asteroid");
+						MyWorldGenerator.AddAsteroidPrefab("small3_asteroids", pos, string.Format("Debris_{0}_{1}_{1}", Math.Floor(pos.X), Math.Floor(pos.Y), Math.Floor(pos.Z)));
+
+
+					}
 				}
-							
-						
-				//Essentials should handle the sync, so do nothing. 
+				catch (Exception ex)
+				{
+					Log.Error(ex);
+				}
 			});
 
 
